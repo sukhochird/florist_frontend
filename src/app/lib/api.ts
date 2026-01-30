@@ -117,18 +117,33 @@ export async function getCategories(): Promise<ApiCategory[]> {
 export interface GetProductsParams {
   featured?: boolean;
   preorder?: boolean;
+  /** Ангилал — Category slug */
   category?: string;
-  occasion?: number;
+  /** Баяр ёслол — Occasion slug */
+  occasion?: string;
+  /** Хуудас (1-based) */
+  page?: number;
+  /** Хуудас бүрт хэдэн бүтээгдэхүүн (default 12) */
+  page_size?: number;
 }
 
-export async function getProducts(params?: GetProductsParams): Promise<ApiProduct[]> {
+export interface GetProductsResponse {
+  products: ApiProduct[];
+  count: number;
+  total_pages: number;
+  current_page: number;
+  page_size: number;
+}
+
+export async function getProducts(params?: GetProductsParams): Promise<GetProductsResponse> {
   const q: Record<string, string> = {};
   if (params?.featured) q.featured = '1';
   if (params?.preorder) q.preorder = '1';
   if (params?.category) q.category = params.category;
-  if (params?.occasion != null) q.occasion = String(params.occasion);
-  const data = await fetchApi<{ products: ApiProduct[] }>('/api/products/', q);
-  return data.products;
+  if (params?.occasion) q.occasion = params.occasion;
+  if (params?.page != null) q.page = String(params.page);
+  if (params?.page_size != null) q.page_size = String(params.page_size);
+  return fetchApi<GetProductsResponse>('/api/products/', q);
 }
 
 export async function getProduct(id: number): Promise<ApiProduct> {
@@ -136,11 +151,13 @@ export async function getProduct(id: number): Promise<ApiProduct> {
 }
 
 export async function getFeaturedProducts(): Promise<ApiProduct[]> {
-  return getProducts({ featured: true });
+  const res = await getProducts({ featured: true });
+  return res.products;
 }
 
 export async function getPreorderProducts(): Promise<ApiProduct[]> {
-  return getProducts({ preorder: true });
+  const res = await getProducts({ preorder: true });
+  return res.products;
 }
 
 // ——— Orders + QPay ———

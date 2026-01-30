@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { Minus, Plus, ShoppingCart, Heart, Share2, Truck, ShieldCheck, Clock, ArrowLeft, RefreshCw, MapPin, HelpCircle, X, Phone, Loader2 } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Heart, Share2, Truck, ShieldCheck, Clock, ArrowLeft, RefreshCw, MapPin, HelpCircle, X, Phone, Loader2, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { useCart } from '@/app/context/CartContext';
 import { useFavorites } from '@/app/context/FavoritesContext';
 import { DirectCheckoutModal } from '@/app/components/DirectCheckoutModal';
@@ -46,11 +46,29 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isStoreInfoOpen, setIsStoreInfoOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [isFullscreenGalleryOpen, setIsFullscreenGalleryOpen] = useState(false);
   const { addItem } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [product, setProduct] = useState<Product | null>(null);
   const [similarProducts, setSimilarProducts] = useState<SimilarProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  useEffect(() => {
+    if (!isFullscreenGalleryOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreenGalleryOpen(false);
+      if (!product) return;
+      if (e.key === 'ArrowLeft') setSelectedImage((i) => (i <= 0 ? product.images.length - 1 : i - 1));
+      if (e.key === 'ArrowRight') setSelectedImage((i) => (i >= product.images.length - 1 ? 0 : i + 1));
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreenGalleryOpen, product]);
 
   useEffect(() => {
     if (!id) return;
@@ -70,8 +88,8 @@ export default function ProductDetailPage() {
           supplier: p.supplier,
           details: (p.details as Product['details']) ?? {},
         });
-        const sameCategory = await getProducts({ category: p.category });
-        const others = sameCategory.filter(x => x.id !== p.id).slice(0, 4);
+        const sameCategoryRes = await getProducts({ category: p.category });
+        const others = sameCategoryRes.products.filter(x => x.id !== p.id).slice(0, 4);
         setSimilarProducts(others.map(o => ({
           id: o.id,
           name: o.name,
@@ -92,6 +110,30 @@ export default function ProductDetailPage() {
 
   const incrementQuantity = () => setQuantity(prev => prev + 1);
   const decrementQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1);
+
+  const handleShare = async () => {
+    if (!product || typeof window === 'undefined') return;
+    const url = window.location.href;
+    const title = product.name;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url, text: title });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return;
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch {
+        console.error('Share failed', err);
+      }
+    }
+  };
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -240,8 +282,15 @@ export default function ProductDetailPage() {
               ))}
             </div>
 
-            {/* Main Image */}
-            <div className="flex-1 aspect-[4/5] bg-gray-50 rounded-lg overflow-hidden relative group order-1 lg:order-2">
+            {/* Main Image — дарж fullscreen слайдер нээнэ */}
+            <div
+              className="flex-1 aspect-[4/5] max-h-[70vh] min-h-[280px] bg-gray-50 rounded-lg overflow-hidden relative group order-1 lg:order-2 cursor-zoom-in"
+              onClick={() => setIsFullscreenGalleryOpen(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && setIsFullscreenGalleryOpen(true)}
+              aria-label="Зургийг томруулж үзэх"
+            >
               <motion.img
                 key={selectedImage}
                 initial={{ opacity: 0 }}
@@ -249,31 +298,103 @@ export default function ProductDetailPage() {
                 transition={{ duration: 0.3 }}
                 src={product.images[selectedImage] ?? product.images?.[0]}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover pointer-events-none"
               />
               <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <button className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setIsFullscreenGalleryOpen(true); }}
+                  className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
+                  title="Томруулж үзэх"
+                >
+                  <Maximize2 className="size-4 text-gray-600" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleShare(); }}
+                  className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
+                  title="Хуваалцах"
+                >
                   <Share2 className="size-4 text-gray-600" />
                 </button>
                 <button 
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    const productId = parseInt(product.id);
-                    if (!isNaN(productId)) {
-                        toggleFavorite(productId);
-                    }
+                    toggleFavorite(product.id);
                   }}
                   className={`p-2 rounded-full shadow-md transition-colors ${
-                    isFavorite(parseInt(product.id)) 
+                    isFavorite(product.id) 
                         ? 'bg-destructive text-white' 
                         : 'bg-white hover:bg-gray-50 text-gray-600'
                   }`}
-                  title={isFavorite(parseInt(product.id)) ? "Хүслийн жагсаалтаас хасах" : "Хүслийн жагсаалтад нэмэх"}
+                  title={isFavorite(product.id) ? "Хүслийн жагсаалтаас хасах" : "Хүслийн жагсаалтад нэмэх"}
                 >
-                  <Heart className={`size-4 ${isFavorite(parseInt(product.id)) ? 'fill-current' : ''}`} />
+                  <Heart className={`size-4 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
                 </button>
               </div>
             </div>
+
+            {/* Fullscreen зургийн слайдер — гадна талд дархад хаагдана */}
+            <AnimatePresence>
+              {isFullscreenGalleryOpen && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-50 flex flex-col bg-black/95"
+                  onClick={() => setIsFullscreenGalleryOpen(false)}
+                >
+                  <div className="flex-1 flex items-center justify-center min-h-0 p-4 md:p-12">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setSelectedImage((i) => (i <= 0 ? product.images.length - 1 : i - 1)); }}
+                      className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                      aria-label="Өмнөх"
+                    >
+                      <ChevronLeft className="size-8" />
+                    </button>
+                    <motion.img
+                      key={selectedImage}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      src={product.images[selectedImage] ?? product.images?.[0]}
+                      alt={product.name}
+                      className="max-w-full max-h-[85vh] w-auto h-auto object-contain select-none cursor-default"
+                      draggable={false}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setSelectedImage((i) => (i >= product.images.length - 1 ? 0 : i + 1)); }}
+                      className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                      aria-label="Дараах"
+                    >
+                      <ChevronRight className="size-8" />
+                    </button>
+                  </div>
+                  <div className="flex justify-center gap-2 py-4 pb-safe" onClick={(e) => e.stopPropagation()}>
+                    {product.images.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedImage(idx)}
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          selectedImage === idx ? 'bg-white' : 'bg-white/40 hover:bg-white/60'
+                        }`}
+                        aria-label={`Зураг ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-center text-white/70 text-sm pb-2" onClick={(e) => e.stopPropagation()}>
+                    {selectedImage + 1} / {product.images.length}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Right Column - Product Info */}
@@ -289,9 +410,10 @@ export default function ProductDetailPage() {
                 <span className="mb-1 text-xs font-bold text-white bg-destructive px-2 py-0.5 rounded">-29%</span>
               </div>
 
-              <p className="text-gray-600 leading-relaxed mb-8">
-                {product.description}
-              </p>
+              <div
+                className="text-gray-600 leading-relaxed mb-8 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-semibold [&_h2]:mt-4 [&_h3]:font-medium [&_h3]:mt-3 [&_a]:text-accent [&_a]:underline [&_strong]:font-semibold"
+                dangerouslySetInnerHTML={{ __html: product.description || '' }}
+              />
 
               {/* Actions */}
               <div className="space-y-4 mb-8">
@@ -345,8 +467,12 @@ export default function ProductDetailPage() {
                      <HelpCircle className="size-4" /> <span>Асуулт асуух</span>
                    </button>
                    <div className="h-4 w-px bg-gray-300 hidden sm:block"></div>
-                   <button className="flex items-center gap-2 hover:text-accent transition-colors">
-                     <Share2 className="size-4" /> <span>Хуваалцах</span>
+                   <button
+                     type="button"
+                     onClick={handleShare}
+                     className="flex items-center gap-2 hover:text-accent transition-colors"
+                   >
+                     <Share2 className="size-4" /> <span>{shareCopied ? 'Холбоос хуулсан!' : 'Хуваалцах'}</span>
                    </button>
                 </div>
 
@@ -425,9 +551,10 @@ export default function ProductDetailPage() {
           <div className="min-h-[200px] text-gray-600 leading-relaxed max-w-3xl">
             {activeTab === 'description' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="mb-4">
-                  {product.description}
-                </p>
+                <div
+                  className="mb-4 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-semibold [&_h2]:mt-4 [&_h3]:font-medium [&_h3]:mt-3 [&_a]:text-accent [&_a]:underline [&_strong]:font-semibold"
+                  dangerouslySetInnerHTML={{ __html: product.description || '' }}
+                />
                 <ul className="list-disc pl-5 space-y-2">
                   <li>Цэцгийн төрөл: {product.details.type}</li>
                   <li>Тоо ширхэг: {product.details.count}</li>

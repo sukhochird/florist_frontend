@@ -3,7 +3,6 @@
 import {
   Search,
   Phone,
-  User,
   Heart,
   ShoppingCart,
   ChevronDown,
@@ -297,12 +296,6 @@ export function Header() {
                 <Phone className="size-5" />
               </button>
               <button
-                className="p-2.5 hover:bg-[#F5F5F5] rounded-full transition-colors"
-                title="Account"
-              >
-                <User className="size-5" />
-              </button>
-              <button
                 onClick={() => router.push('/favorites')}
                 className="p-2.5 hover:bg-[#F5F5F5] rounded-full transition-colors relative group"
                 title="Wishlist"
@@ -448,12 +441,6 @@ export function Header() {
                     className="p-3 bg-white rounded-full shadow-sm hover:text-accent"
                   >
                     <Phone className="size-5" />
-                  </a>
-                  <a
-                    href="#"
-                    className="p-3 bg-white rounded-full shadow-sm hover:text-accent"
-                  >
-                    <User className="size-5" />
                   </a>
                   <button
                     type="button"

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { Filter, ChevronDown, ChevronRight, LayoutGrid, List, Check, X, SlidersHorizontal, Heart, Loader2 } from 'lucide-react';
 import { getCategories, getOccasions, getProducts } from '@/app/lib/api';
@@ -27,17 +28,45 @@ function mapApiProductToGrid(p: ApiProduct): Product {
   };
 }
 
-export default function ProductsPage() {
+function ProductsPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const categorySlug = searchParams.get('category');
+  const occasionSlug = searchParams.get('occasion');
+  const pageParam = searchParams.get('page');
+  const currentPage = pageParam ? Math.max(1, parseInt(pageParam, 10) || 1) : 1;
+
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { toggleFavorite, isFavorite } = useFavorites();
   const [categories, setCategories] = useState<Category[]>([]);
   const [occasionCategory, setOccasionCategory] = useState<Category | null>(null);
   const [products, setProducts] = useState<ApiProduct[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [productsLoading, setProductsLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const PAGE_SIZE = 12;
+
+  const setFilters = useCallback((params: { category?: string | null; occasion?: string | null; page?: number | null }) => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (params.category !== undefined) {
+      if (params.category) next.set('category', params.category);
+      else next.delete('category');
+    }
+    if (params.occasion !== undefined) {
+      if (params.occasion) next.set('occasion', params.occasion);
+      else next.delete('occasion');
+    }
+    if (params.page !== undefined) {
+      if (params.page != null && params.page > 1) next.set('page', String(params.page));
+      else next.delete('page');
+    }
+    router.push(pathname + (next.toString() ? '?' + next.toString() : ''));
+  }, [pathname, router, searchParams]);
 
   useEffect(() => {
     const load = async () => {
@@ -63,8 +92,15 @@ export default function ProductsPage() {
     const load = async () => {
       setProductsLoading(true);
       try {
-        const list = await getProducts();
-        setProducts(list);
+        const res = await getProducts({
+          category: categorySlug || undefined,
+          occasion: occasionSlug || undefined,
+          page: currentPage,
+          page_size: PAGE_SIZE,
+        });
+        setProducts(res.products);
+        setTotalCount(res.count);
+        setTotalPages(res.total_pages);
       } catch (e) {
         console.error('Products page: load products', e);
       } finally {
@@ -72,7 +108,7 @@ export default function ProductsPage() {
       }
     };
     load();
-  }, []);
+  }, [categorySlug, occasionSlug, currentPage]);
 
   useEffect(() => {
     if (showMobileFilters) document.body.style.overflow = 'hidden';
@@ -89,16 +125,16 @@ export default function ProductsPage() {
   };
 
   const mainCategories = categories;
+  const hasActiveFilter = Boolean(categorySlug || occasionSlug);
 
   const filteredProducts = products.filter(product =>
-    (!selectedCategory || product.category === selectedCategory || selectedCategory === 'all') &&
-    (product.price >= priceRange[0] && product.price <= priceRange[1])
+    product.price >= priceRange[0] && product.price <= priceRange[1]
   );
 
   const CategoryItem = ({ category, level = 0 }: { category: Category, level?: number }) => {
     const hasChildren = category.subcategories && category.subcategories.length > 0;
     const isExpanded = expandedCategories.has(String(category.id));
-    const isSelected = selectedCategory === category.name;
+    const isSelected = categorySlug === category.slug;
 
     return (
       <div className="select-none">
@@ -106,7 +142,7 @@ export default function ProductsPage() {
           className={`flex items-center justify-between py-1.5 cursor-pointer hover:text-accent transition-colors ${isSelected ? 'text-accent font-medium' : 'text-gray-600'}`}
           style={{ paddingLeft: `${level * 12}px` }}
         >
-          <span onClick={() => setSelectedCategory(category.name)}>
+          <span onClick={() => { setFilters({ category: category.slug }); if (window.innerWidth < 1024) setShowMobileFilters(false); }}>
             {category.name}
           </span>
           
@@ -149,7 +185,7 @@ export default function ProductsPage() {
           <nav className="text-sm text-gray-500 mb-4">
              <Link href="/" className="hover:text-black">Нүүр</Link>
              <span className="mx-2">/</span>
-             <span className="text-black font-medium">Бүх бүтээ��дэхүүн</span>
+             <span className="text-black font-medium">Бүх бүтээгдэхүүн</span>
           </nav>
           <h1 className="text-3xl md:text-4xl font-serif font-medium">Бүтээгдэхүүний жагсаалт</h1>
         </div>
@@ -180,9 +216,9 @@ export default function ProductsPage() {
                     <h3 className="font-bold text-lg flex items-center gap-2">
                       Төрөл
                     </h3>
-                    {selectedCategory && (
+                    {hasActiveFilter && (
                       <button 
-                        onClick={() => setSelectedCategory(null)}
+                        onClick={() => { setFilters({ category: null, occasion: null }); if (window.innerWidth < 1024) setShowMobileFilters(false); }}
                         className="text-xs text-muted-foreground hover:text-accent underline"
                       >
                         Арилгах
@@ -193,11 +229,8 @@ export default function ProductsPage() {
                   <div className="space-y-1">
                     {/* All Option */}
                     <div 
-                      className={`cursor-pointer hover:text-accent transition-colors py-1.5 ${!selectedCategory ? 'text-accent font-medium' : 'text-gray-600'}`}
-                      onClick={() => {
-                        setSelectedCategory(null);
-                        if(window.innerWidth < 1024) setShowMobileFilters(false);
-                      }}
+                      className={`cursor-pointer hover:text-accent transition-colors py-1.5 ${!categorySlug && !occasionSlug ? 'text-accent font-medium' : 'text-gray-600'}`}
+                      onClick={() => { setFilters({ category: null, occasion: null }); if (window.innerWidth < 1024) setShowMobileFilters(false); }}
                     >
                       Бүгд
                     </div>
@@ -209,15 +242,31 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Occasions (Separated) */}
+                {/* Occasions (Баяр ёслол) — slug-аар шүүлт */}
                 {occasionCategory && (
                   <div className="mb-8">
-                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                      Баяр ёслол
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-lg flex items-center gap-2">
+                        Баяр ёслол
+                      </h3>
+                      {occasionSlug && (
+                        <button 
+                          onClick={() => { setFilters({ occasion: null }); if (window.innerWidth < 1024) setShowMobileFilters(false); }}
+                          className="text-xs text-muted-foreground hover:text-accent underline"
+                        >
+                          Арилгах
+                        </button>
+                      )}
+                    </div>
                     <div className="space-y-1">
                       {occasionCategory.subcategories?.map(sub => (
-                        <CategoryItem key={sub.id} category={sub} />
+                        <div
+                          key={sub.id}
+                          className={`cursor-pointer py-1.5 hover:text-accent transition-colors ${occasionSlug === sub.slug ? 'text-accent font-medium' : 'text-gray-600'}`}
+                          onClick={() => { setFilters({ occasion: sub.slug }); if (window.innerWidth < 1024) setShowMobileFilters(false); }}
+                        >
+                          {sub.name}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -358,7 +407,7 @@ export default function ProductsPage() {
                             -{product.discount}%
                           </span>
                         )}
-                        {product.isPreOrder && (
+                        {product.is_pre_order && (
                           <span className="bg-white/90 backdrop-blur text-foreground px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">
                             Захиалгаар
                           </span>
@@ -400,7 +449,7 @@ export default function ProductsPage() {
                 <p>Бүтээгдэхүүн олдсонгүй.</p>
                 <button 
                   onClick={() => {
-                    setSelectedCategory(null);
+                    setFilters({ category: null, occasion: null });
                     setPriceRange([0, 500000]);
                   }}
                   className="mt-4 text-accent underline hover:text-accent/80"
@@ -410,20 +459,72 @@ export default function ProductsPage() {
               </div>
             )}
             
-            {/* Pagination */}
-            <div className="mt-16 flex justify-center gap-2">
-               {[1, 2, 3].map(page => (
-                 <button 
-                   key={page}
-                   className={`size-10 flex items-center justify-center rounded border transition-colors ${page === 1 ? 'bg-black text-white border-black' : 'border-gray-200 hover:border-black'}`}
-                 >
-                   {page}
-                 </button>
-               ))}
-            </div>
+            {/* Pagination — бүтээгдэхүүн байхгүй бол харагдахгүй */}
+            {totalPages > 1 && totalCount > 0 && (
+              <div className="mt-16 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFilters({ page: currentPage - 1 })}
+                  disabled={currentPage <= 1}
+                  className="size-10 flex items-center justify-center rounded border border-gray-200 hover:border-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Өмнөх
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => {
+                    if (totalPages <= 7) return true;
+                    if (p === 1 || p === totalPages) return true;
+                    if (p >= currentPage - 2 && p <= currentPage + 2) return true;
+                    return false;
+                  })
+                  .reduce<number[]>((acc, p, i, arr) => {
+                    if (i > 0 && p - (arr[i - 1] ?? 0) > 1) acc.push(-1);
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    p === -1 ? (
+                      <span key={`ellipsis-${i}`} className="px-1 text-gray-400">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setFilters({ page: p })}
+                        className={`size-10 flex items-center justify-center rounded border transition-colors ${
+                          currentPage === p ? 'bg-black text-white border-black' : 'border-gray-200 hover:border-black'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                <button
+                  type="button"
+                  onClick={() => setFilters({ page: currentPage + 1 })}
+                  disabled={currentPage >= totalPages}
+                  className="size-10 flex items-center justify-center rounded border border-gray-200 hover:border-black disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Дараах
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <Loader2 className="size-10 animate-spin text-gray-300" />
+        </div>
+      }
+    >
+      <ProductsPageContent />
+    </Suspense>
   );
 }
