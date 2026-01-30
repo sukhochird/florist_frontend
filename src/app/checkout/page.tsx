@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ChevronRight, Loader2, CheckCircle2, Smartphone } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Loader2, CheckCircle2, Smartphone, XCircle } from 'lucide-react';
 import { QPayQrDisplay } from '@/app/components/QPayQrDisplay';
 import { useCart } from '@/app/context/CartContext';
-import { createOrder, type CreateOrderResponse } from '@/app/lib/api';
+import { createOrder, getOrder, type CreateOrderResponse } from '@/app/lib/api';
 import { toast } from 'sonner';
+
+const POLL_INTERVAL_MS = 3000;
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
@@ -17,7 +19,9 @@ export default function CheckoutPage() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [step, setStep] = useState<'form' | 'payment'>('form');
   const [orderResult, setOrderResult] = useState<CreateOrderResponse | null>(null);
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const deliveryFee = deliveryMethod === 'city' ? 10000 : 15000;
   const grandTotal = totalPrice + deliveryFee;
@@ -64,8 +68,39 @@ export default function CheckoutPage() {
     }
   };
 
+  // Төлбөрийн төлөв шалгах (QPay webhook төлөгдсөн бол автоматаар шинэчлэгдэнэ)
+  useEffect(() => {
+    if (step !== 'payment' || !orderResult?.order_id) return;
+    const check = async () => {
+      try {
+        const order = await getOrder(orderResult.order_id);
+        setOrderStatus(order.status);
+        if (order.status === 'paid') {
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+        }
+      } catch {
+        // үл тоомжлор
+      }
+    };
+    setOrderStatus(orderResult.status);
+    if (orderResult.status !== 'paid') {
+      check();
+      pollRef.current = setInterval(check, POLL_INTERVAL_MS);
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [step, orderResult?.order_id, orderResult?.status]);
+
   if (step === 'payment' && orderResult) {
     const qpay = orderResult.qpay;
+    const isPaid = orderStatus === 'paid';
     return (
       <div className="min-h-screen bg-gray-50 pt-12 pb-12 animate-in fade-in duration-500">
         <div className="max-w-[600px] mx-auto px-4 md:px-8">
@@ -74,49 +109,65 @@ export default function CheckoutPage() {
             Нүүр хуудас
           </Link>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="size-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle2 className="size-6 text-green-600" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`size-12 rounded-full flex items-center justify-center ${isPaid ? 'bg-green-100' : 'bg-amber-100'}`}>
+                {isPaid ? (
+                  <CheckCircle2 className="size-6 text-green-600" />
+                ) : (
+                  <XCircle className="size-6 text-amber-600" />
+                )}
               </div>
-              <div>
+              <div className="flex-1">
                 <h1 className="text-xl font-serif font-semibold">Захиалга #{orderResult.order_number}</h1>
-                <p className="text-gray-500 text-sm">Нийт {orderResult.total.toLocaleString()}₮ — QPay-аар төлнө үү</p>
+                <p className="text-gray-500 text-sm">Нийт {orderResult.total.toLocaleString()}₮</p>
+              </div>
+              <div className={`px-3 py-1.5 rounded-full text-sm font-medium ${isPaid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                {isPaid ? 'Төлөгдлөө' : 'Төлбөр төлөгдөнгүй'}
               </div>
             </div>
 
-            <div className="mb-6">
-              <p className="text-sm font-medium text-gray-700 mb-2 text-center">QR кодыг уншуулж төлнө үү</p>
-              <QPayQrDisplay qrImage={qpay.qr_image} qrCode={qpay.qr_code} size={220} />
-            </div>
+            {!isPaid && (
+              <>
+                <p className="text-sm font-medium text-gray-700 mb-2 text-center">QR кодыг уншуулж төлнө үү</p>
+                <div className="mb-6">
+                  <QPayQrDisplay qrImage={qpay.qr_image} qrCode={qpay.qr_code} size={220} />
+                </div>
+                <p className="text-sm font-medium text-gray-700 mb-3">Эсвэл банк / аппаа сонгоно уу:</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                  {qpay.urls?.slice(0, 12).map((u, idx) => (
+                    <a
+                      key={idx}
+                      href={u.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-accent hover:bg-accent/5 transition-colors"
+                    >
+                      {u.logo ? (
+                        <img src={u.logo} alt={u.name} className="size-10 object-contain rounded" />
+                      ) : (
+                        <Smartphone className="size-10 text-gray-400" />
+                      )}
+                      <span className="text-xs font-medium text-center line-clamp-2">{u.name}</span>
+                    </a>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 text-center mb-6">
+                  Төлбөр төлсний дараа захиалга автоматаар «Төлөгдлөө» болно. Асуудал гарвал бид таньтай холбогдоно.
+                </p>
+              </>
+            )}
 
-            <p className="text-sm font-medium text-gray-700 mb-3">Эсвэл банк / аппаа сонгоно уу:</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-              {qpay.urls?.slice(0, 12).map((u, idx) => (
-                <a
-                  key={idx}
-                  href={u.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-accent hover:bg-accent/5 transition-colors"
-                >
-                  {u.logo ? (
-                    <img src={u.logo} alt={u.name} className="size-10 object-contain rounded" />
-                  ) : (
-                    <Smartphone className="size-10 text-gray-400" />
-                  )}
-                  <span className="text-xs font-medium text-center line-clamp-2">{u.name}</span>
-                </a>
-              ))}
-            </div>
+            {isPaid && (
+              <p className="text-sm text-green-700 bg-green-50 rounded-lg p-4 mb-6">
+                Таны төлбөр амжилттай төлөгдлөө. Захиалга баталгаажлаа. Бид таньтай холбогдоно.
+              </p>
+            )}
 
-            <p className="text-xs text-gray-500 text-center">
-              Төлбөр төлсний дараа захиалга автоматаар баталгаажина. Асуудал гарвал бид таньтай холбогдоно.
-            </p>
             <div className="mt-6 flex gap-3">
               <Link href="/products" className="flex-1 text-center py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition">
                 Дэлгэрэнгүй үргэлжлүүлэх
               </Link>
-              <Link href="/" className="flex-1 text-center py-3 rounded-lg bg-black text-white font-medium hover:bg-gray-800 transition">
+              <Link href="/" className="flex-1 text-center py-3 rounded-lg bg-black text-white font-medium hover:bg-black/90 transition">
                 Нүүр хуудас
               </Link>
             </div>

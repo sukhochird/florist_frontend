@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MapPin, Phone, CreditCard, CheckCircle2, Smartphone, Loader2 } from 'lucide-react';
+import { X, MapPin, Phone, CreditCard, CheckCircle2, Smartphone, Loader2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { QPayQrDisplay } from '@/app/components/QPayQrDisplay';
-import { createOrder, type CreateOrderResponse } from '@/app/lib/api';
+import { createOrder, getOrder, type CreateOrderResponse } from '@/app/lib/api';
+
+const POLL_INTERVAL_MS = 3000;
 
 interface DirectCheckoutModalProps {
   isOpen: boolean;
@@ -27,6 +29,8 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [orderResult, setOrderResult] = useState<CreateOrderResponse | null>(null);
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const productTotal = product.price * product.quantity;
   const deliveryFee = deliveryMethod === 'city' ? 10000 : 15000;
@@ -69,15 +73,50 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
   };
 
   const handleClose = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
     setStep('form');
     setOrderResult(null);
+    setOrderStatus(null);
     setCustomerName('');
     setCustomerPhone('');
     setDeliveryAddress('');
     onClose();
   };
 
-  const title = step === 'form' ? 'Худалдан авалт' : (step === 'payment' && orderResult ? 'Төлбөр төлөх' : 'Баярлалаа');
+  useEffect(() => {
+    if (!isOpen || step !== 'payment' || !orderResult?.order_id) return;
+    const check = async () => {
+      try {
+        const order = await getOrder(orderResult.order_id);
+        setOrderStatus(order.status);
+        if (order.status === 'paid') {
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    setOrderStatus(orderResult.status);
+    if (orderResult.status !== 'paid') {
+      check();
+      pollRef.current = setInterval(check, POLL_INTERVAL_MS);
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [isOpen, step, orderResult?.order_id, orderResult?.status]);
+
+  const isPaid = orderStatus === 'paid';
+  const title = step === 'form' ? 'Худалдан авалт' : (step === 'payment' && orderResult ? (isPaid ? 'Төлөгдлөө' : 'Төлбөр төлөх') : 'Баярлалаа');
 
   return (
     <AnimatePresence>
@@ -210,36 +249,46 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
               ) : step === 'payment' && orderResult ? (
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-full bg-green-100 flex items-center justify-center">
-                      <CheckCircle2 className="size-6 text-green-600" />
+                    <div className={`size-12 rounded-full flex items-center justify-center ${isPaid ? 'bg-green-100' : 'bg-amber-100'}`}>
+                      {isPaid ? <CheckCircle2 className="size-6 text-green-600" /> : <XCircle className="size-6 text-amber-600" />}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">Захиалга #{orderResult.order_number}</h3>
-                      <p className="text-sm text-gray-500">Нийт {orderResult.total.toLocaleString()}₮ — QPay-аар төлнө үү</p>
+                      <p className="text-sm text-gray-500">Нийт {orderResult.total.toLocaleString()}₮</p>
                     </div>
+                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${isPaid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {isPaid ? 'Төлөгдлөө' : 'Төлбөр төлөгдөнгүй'}
+                    </span>
                   </div>
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2 text-center">QR кодыг уншуулж төлнө үү</p>
-                    <QPayQrDisplay qrImage={orderResult.qpay.qr_image} qrCode={orderResult.qpay.qr_code} size={200} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Банк / аппаа сонгоно уу:</p>
-                    <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
-                      {orderResult.qpay.urls?.slice(0, 10).map((u, idx) => (
-                        <a
-                          key={idx}
-                          href={u.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-accent hover:bg-accent/5 transition-colors"
-                        >
-                          {u.logo ? <img src={u.logo} alt={u.name} className="size-8 object-contain" /> : <Smartphone className="size-8 text-gray-400" />}
-                          <span className="text-xs font-medium truncate">{u.name}</span>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 text-center">Төлбөр төлсний дараа захиалга автоматаар баталгаажина.</p>
+                  {!isPaid && (
+                    <>
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2 text-center">QR кодыг уншуулж төлнө үү</p>
+                        <QPayQrDisplay qrImage={orderResult.qpay.qr_image} qrCode={orderResult.qpay.qr_code} size={200} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Банк / аппаа сонгоно уу:</p>
+                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
+                          {orderResult.qpay.urls?.slice(0, 10).map((u, idx) => (
+                            <a
+                              key={idx}
+                              href={u.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 hover:border-accent hover:bg-accent/5 transition-colors"
+                            >
+                              {u.logo ? <img src={u.logo} alt={u.name} className="size-8 object-contain" /> : <Smartphone className="size-8 text-gray-400" />}
+                              <span className="text-xs font-medium truncate">{u.name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 text-center">Төлбөр төлсний дараа «Төлөгдлөө» гэж автоматаар шинэчлэгдэнэ.</p>
+                    </>
+                  )}
+                  {isPaid && (
+                    <p className="text-sm text-green-700 bg-green-50 rounded-lg p-4">Таны төлбөр амжилттай төлөгдлөө. Захиалга баталгаажлаа.</p>
+                  )}
                   <button onClick={handleClose} className="w-full py-3 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-800 transition">
                     Хаах
                   </button>
