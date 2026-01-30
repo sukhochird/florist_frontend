@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { ArrowLeft, ChevronRight, Loader2, CheckCircle2, Smartphone, XCircle } from 'lucide-react';
 import { QPayQrDisplay } from '@/app/components/QPayQrDisplay';
 import { useCart } from '@/app/context/CartContext';
-import { createOrder, getOrder, type CreateOrderResponse } from '@/app/lib/api';
+import { createOrder, getOrder, validatePromoCode, type CreateOrderResponse, type ValidatePromoResponse } from '@/app/lib/api';
 import { toast } from 'sonner';
+import { Tag, X } from 'lucide-react';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -21,10 +22,14 @@ export default function CheckoutPage() {
   const [orderResult, setOrderResult] = useState<CreateOrderResponse | null>(null);
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<ValidatePromoResponse | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const deliveryFee = deliveryMethod === 'city' ? 10000 : 15000;
-  const grandTotal = totalPrice + deliveryFee;
+  const discountAmount = appliedPromo?.valid && appliedPromo.discount_amount ? appliedPromo.discount_amount : 0;
+  const grandTotal = Math.max(0, totalPrice + deliveryFee - discountAmount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +60,7 @@ export default function CheckoutPage() {
           image: i.image,
           quantity: i.quantity,
         })),
+        promo_code: appliedPromo?.valid && appliedPromo.code ? appliedPromo.code : undefined,
       });
       setOrderResult(res);
       setStep('payment');
@@ -295,7 +301,7 @@ export default function CheckoutPage() {
                     ))
                   )}
                 </div>
-                <div className="border-t border-gray-200 pt-4 space-y-3 mb-6">
+                <div className="border-t border-gray-200 pt-4 space-y-3 mb-4">
                   <div className="flex items-center justify-between text-gray-600">
                     <span>Барааны үнэ</span>
                     <span>{totalPrice.toLocaleString()}₮</span>
@@ -304,10 +310,71 @@ export default function CheckoutPage() {
                     <span>Хүргэлт</span>
                     <span>{deliveryFee.toLocaleString()}₮</span>
                   </div>
+                  {appliedPromo?.valid && discountAmount > 0 && (
+                    <div className="flex items-center justify-between text-green-600">
+                      <span>Промо код ({appliedPromo.code})</span>
+                      <span>-{discountAmount.toLocaleString()}₮</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between font-bold text-lg pt-2 border-t border-dashed border-gray-200">
                     <span>Нийт төлөх</span>
                     <span className="text-accent">{grandTotal.toLocaleString()}₮</span>
                   </div>
+                </div>
+                <div className="mb-6">
+                  {appliedPromo?.valid ? (
+                    <div className="flex items-center justify-between gap-2 py-2 px-3 bg-green-50 rounded-lg border border-green-200">
+                      <span className="text-sm font-medium text-green-800 flex items-center gap-2">
+                        <Tag className="size-4" />
+                        Промо код: {appliedPromo.code}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => { setAppliedPromo(null); setPromoInput(''); }}
+                        className="text-green-600 hover:text-green-800 p-1 rounded"
+                        aria-label="Промо кодыг устгах"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoInput}
+                        onChange={(e) => setPromoInput(e.target.value)}
+                        placeholder="Промо код оруулах"
+                        className="flex-1 px-3 py-2.5 rounded border border-gray-300 text-sm focus:outline-none focus:border-black transition-colors"
+                      />
+                      <button
+                        type="button"
+                        disabled={promoLoading || !promoInput.trim() || items.length === 0}
+                        onClick={async () => {
+                          const code = promoInput.trim();
+                          if (!code) return;
+                          setPromoLoading(true);
+                          try {
+                            const result = await validatePromoCode(code, totalPrice);
+                            if (result.valid) {
+                              setAppliedPromo(result);
+                              toast.success(`Промо код амжилттай хэрэглэгдлээ. -${(result.discount_amount ?? 0).toLocaleString()}₮`);
+                            } else {
+                              setAppliedPromo(null);
+                              toast.error(result.error || 'Промо код буруу байна.');
+                            }
+                          } catch {
+                            setAppliedPromo(null);
+                            toast.error('Промо код шалгахад алдаа гарлаа.');
+                          } finally {
+                            setPromoLoading(false);
+                          }
+                        }}
+                        className="px-4 py-2.5 rounded border border-gray-300 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {promoLoading ? '...' : 'Хэрэглэх'}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <button
                   type="submit"

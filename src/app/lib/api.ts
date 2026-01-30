@@ -179,6 +179,36 @@ export interface CreateOrderPayload {
   delivery_method: 'city' | 'countryside';
   delivery_address?: string;
   items: CreateOrderItem[];
+  promo_code?: string;
+}
+
+// ——— Promo code ———
+
+export interface ValidatePromoResponse {
+  valid: boolean;
+  code?: string;
+  discount_type?: 'percent' | 'fixed';
+  discount_value?: number;
+  discount_amount?: number;
+  error?: string;
+}
+
+export async function validatePromoCode(
+  code: string,
+  subtotal: number
+): Promise<ValidatePromoResponse> {
+  const res = await fetch(
+    `${API_BASE}/api/promo/validate/`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code.trim(), subtotal }),
+      cache: 'no-store',
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) return { valid: false, error: (data as { error?: string }).error || 'Алдаа гарлаа.' };
+  return data as ValidatePromoResponse;
 }
 
 export interface QPayUrl {

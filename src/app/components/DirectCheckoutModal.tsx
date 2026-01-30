@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MapPin, Phone, CreditCard, CheckCircle2, Smartphone, Loader2, XCircle } from 'lucide-react';
+import { X, MapPin, Phone, CreditCard, CheckCircle2, Smartphone, Loader2, XCircle, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { QPayQrDisplay } from '@/app/components/QPayQrDisplay';
-import { createOrder, getOrder, type CreateOrderResponse } from '@/app/lib/api';
+import { createOrder, getOrder, validatePromoCode, type CreateOrderResponse, type ValidatePromoResponse } from '@/app/lib/api';
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -30,11 +30,15 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [orderResult, setOrderResult] = useState<CreateOrderResponse | null>(null);
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const [promoInput, setPromoInput] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<ValidatePromoResponse | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const productTotal = product.price * product.quantity;
   const deliveryFee = deliveryMethod === 'city' ? 10000 : 15000;
-  const grandTotal = productTotal + deliveryFee;
+  const discountAmount = appliedPromo?.valid && appliedPromo.discount_amount ? appliedPromo.discount_amount : 0;
+  const grandTotal = Math.max(0, productTotal + deliveryFee - discountAmount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +64,7 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
           image: product.image,
           quantity: product.quantity,
         }],
+        promo_code: appliedPromo?.valid && appliedPromo.code ? appliedPromo.code : undefined,
       });
       setOrderResult(res);
       setStep('payment');
@@ -80,6 +85,8 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
     setStep('form');
     setOrderResult(null);
     setOrderStatus(null);
+    setAppliedPromo(null);
+    setPromoInput('');
     setCustomerName('');
     setCustomerPhone('');
     setDeliveryAddress('');
@@ -232,10 +239,69 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
                       <span>Хүргэлт:</span>
                       <span>{deliveryFee.toLocaleString()}₮</span>
                     </div>
-                    <div className="flex items-center justify-between mb-4 pt-2 border-t border-dashed border-gray-200">
+                    {appliedPromo?.valid && discountAmount > 0 && (
+                      <div className="flex items-center justify-between text-sm text-green-600">
+                        <span>Промо код ({appliedPromo.code})</span>
+                        <span>-{discountAmount.toLocaleString()}₮</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mb-2 pt-2 border-t border-dashed border-gray-200">
                       <span className="font-bold text-gray-900">Нийт төлөх:</span>
                       <span className="text-2xl font-bold text-accent">{grandTotal.toLocaleString()}₮</span>
                     </div>
+                    {appliedPromo?.valid ? (
+                      <div className="flex items-center justify-between gap-2 py-2 px-3 bg-green-50 rounded-lg border border-green-200 mb-2">
+                        <span className="text-sm font-medium text-green-800 flex items-center gap-2">
+                          <Tag className="size-4" />
+                          Промо код: {appliedPromo.code}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setAppliedPromo(null); setPromoInput(''); }}
+                          className="text-green-600 hover:text-green-800 p-1 rounded"
+                          aria-label="Промо кодыг устгах"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={promoInput}
+                          onChange={(e) => setPromoInput(e.target.value)}
+                          placeholder="Промо код оруулах"
+                          className="flex-1 px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                        />
+                        <button
+                          type="button"
+                          disabled={promoLoading || !promoInput.trim()}
+                          onClick={async () => {
+                            const code = promoInput.trim();
+                            if (!code) return;
+                            setPromoLoading(true);
+                            try {
+                              const result = await validatePromoCode(code, productTotal);
+                              if (result.valid) {
+                                setAppliedPromo(result);
+                                toast.success(`Промо код амжилттай хэрэглэгдлээ. -${(result.discount_amount ?? 0).toLocaleString()}₮`);
+                              } else {
+                                setAppliedPromo(null);
+                                toast.error(result.error || 'Промо код буруу байна.');
+                              }
+                            } catch {
+                              setAppliedPromo(null);
+                              toast.error('Промо код шалгахад алдаа гарлаа.');
+                            } finally {
+                              setPromoLoading(false);
+                            }
+                          }}
+                          className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {promoLoading ? '...' : 'Хэрэглэх'}
+                        </button>
+                      </div>
+                    )}
                     <button
                       type="submit"
                       disabled={loading}

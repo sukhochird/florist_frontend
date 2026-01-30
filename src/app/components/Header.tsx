@@ -88,14 +88,9 @@ export function Header() {
     },
     { 
       label: "Бүтээгдэхүүн", 
-      hasDropdown: true, 
+      hasDropdown: false, 
       route: 'products', 
-      id: 'products',
-      // Combine Flowers and Plants for "Products" menu
-      children: [
-        ...(flowersCat ? [flowersCat] : []),
-        ...(plantsCat ? [plantsCat] : [])
-      ]
+      id: 'products'
     },
     { 
       label: "Баяр ёслол", 

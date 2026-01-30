@@ -45,6 +45,7 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('description');
   const [selectedImage, setSelectedImage] = useState(0);
   const [isStoreInfoOpen, setIsStoreInfoOpen] = useState(false);
+  const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isFullscreenGalleryOpen, setIsFullscreenGalleryOpen] = useState(false);
   const { addItem } = useCart();
@@ -242,6 +243,64 @@ export default function ProductDetailPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Хүргэлт & Буцаалт Modal */}
+      <AnimatePresence>
+        {isDeliveryModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-[70] backdrop-blur-sm"
+              onClick={() => setIsDeliveryModalOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg max-h-[85vh] bg-white z-[70] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
+                <h3 className="text-xl font-serif font-bold flex items-center gap-2">
+                  <Truck className="size-5 text-accent" />
+                  Хүргэлт & Буцаалт
+                </h3>
+                <button
+                  onClick={() => setIsDeliveryModalOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Хаах"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto text-gray-600 text-sm space-y-6">
+                <section>
+                  <h4 className="font-semibold text-gray-900 mb-2">Хүргэлтийн нөхцөл</h4>
+                  <p className="mb-3">Хүргэлтийн үнэ тариф:</p>
+                  <ul className="list-disc pl-5 space-y-1 mb-3">
+                    <li><span className="font-medium text-gray-800">Хүргүүлж авах:</span> 10,000₮ (Улаанбаатар хот дотор)</li>
+                    <li><span className="font-medium text-gray-800">Хөдөө орон нутгийн унаанд тавиулах:</span> 15,000₮</li>
+                  </ul>
+                  <div className="p-3 bg-amber-50 text-amber-800 rounded-lg border border-amber-100">
+                    Санамж: Хотын A бүсэд хүргэлт 10,000₮ бөгөөд энэ бүсээс гадуурх хүргэлтэнд нэмэлт төлбөр бодогдоно.
+                  </div>
+                </section>
+                <section>
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <RefreshCw className="size-4 text-accent" />
+                    Буцаалтын нөхцөл
+                  </h4>
+                  <p>
+                    Цэцэг, амьд ургамлын шинж чанараас шалтгаалан буцаалт хийх боломжгүй. Захиалгаа өгөхөөс өмнө бүтээгдэхүүн, хэмжээ, өнгө зэргийг сайтар сонгоно уу. Асуудал гарвал дэлгүүртэй шууд холбогдоно уу.
+                  </p>
+                </section>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Navigation Bar for Detail Page */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-4 md:px-8">
         <div className="max-w-[1440px] mx-auto flex items-center gap-4">
@@ -459,7 +518,11 @@ export default function ProductDetailPage() {
               <div className="border-t border-gray-200 pt-6 space-y-6">
                 {/* Top Links */}
                 <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-gray-600">
-                   <button className="flex items-center gap-2 hover:text-accent transition-colors">
+                   <button
+                     type="button"
+                     onClick={() => setIsDeliveryModalOpen(true)}
+                     className="flex items-center gap-2 hover:text-accent transition-colors"
+                   >
                      <Truck className="size-4" /> <span>Хүргэлт & Буцаалт</span>
                    </button>
                    <div className="h-4 w-px bg-gray-300 hidden sm:block"></div>
@@ -497,14 +560,6 @@ export default function ProductDetailPage() {
                   <div className="grid grid-cols-[120px_1fr] gap-2">
                     <span className="text-gray-500">Бүтээгдэхүүний код:</span>
                     <span className="font-medium text-gray-900">{product.sku}</span>
-                  </div>
-                  <div className="grid grid-cols-[120px_1fr] gap-2">
-                    <span className="text-gray-500">Нийлүүлэгч:</span>
-                    <span className="font-medium text-gray-900">{product.supplier}</span>
-                  </div>
-                  <div className="grid grid-cols-[120px_1fr] gap-2">
-                    <span className="text-gray-500">Бэлэн байдал:</span>
-                    <span className="font-medium text-green-600">{product.availability}</span>
                   </div>
                   <div className="grid grid-cols-[120px_1fr] gap-2">
                     <span className="text-gray-500">Ангилал:</span>
