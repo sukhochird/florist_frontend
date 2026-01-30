@@ -13,6 +13,7 @@ type Slide = {
   title: string;
   subtitle: string;
   button: string;
+  link?: string;
   theme: string;
 };
 
@@ -147,10 +148,24 @@ export function HeroSection() {
                             <p className="text-sm md:text-lg text-white/90 mb-5 md:mb-7 font-light">
                               {slide.subtitle}
                             </p>
-                            <button className="bg-white text-black px-5 py-2.5 md:px-7 md:py-3 rounded-full font-medium hover:bg-accent hover:text-white transition-colors flex items-center gap-2 text-sm">
-                              {slide.button}
-                              <ArrowRight className="size-4" />
-                            </button>
+                            {slide.link ? (
+                              slide.link.startsWith('http://') || slide.link.startsWith('https://') ? (
+                                <a href={slide.link} target="_blank" rel="noopener noreferrer" className="bg-white text-black px-5 py-2.5 md:px-7 md:py-3 rounded-full font-medium hover:bg-accent hover:text-white transition-colors inline-flex items-center gap-2 text-sm">
+                                  {slide.button}
+                                  <ArrowRight className="size-4" />
+                                </a>
+                              ) : (
+                                <a href={slide.link} className="bg-white text-black px-5 py-2.5 md:px-7 md:py-3 rounded-full font-medium hover:bg-accent hover:text-white transition-colors inline-flex items-center gap-2 text-sm">
+                                  {slide.button}
+                                  <ArrowRight className="size-4" />
+                                </a>
+                              )
+                            ) : (
+                              <span className="bg-white text-black px-5 py-2.5 md:px-7 md:py-3 rounded-full font-medium inline-flex items-center gap-2 text-sm">
+                                {slide.button}
+                                <ArrowRight className="size-4" />
+                              </span>
+                            )}
                           </motion.div>
                         </div>
                       </div>
@@ -177,23 +192,33 @@ export function HeroSection() {
 
           {/* Side Banners */}
           <div className="lg:col-span-1 grid grid-cols-2 lg:grid-cols-1 gap-4 lg:gap-6 h-auto">
-            {banners.map((banner) => (
-              <div key={banner.id} className="relative rounded-2xl overflow-hidden h-[160px] lg:h-[190px] group cursor-pointer">
-                <img
-                  src={banner.image}
-                  alt={banner.alt}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                
-                {/* Icon */}
-                <div className="absolute bottom-4 right-4 z-10">
-                   <div className="bg-white/30 backdrop-blur-md p-2.5 rounded-full text-white group-hover:bg-white group-hover:text-black transition-all shadow-lg">
-                     <ArrowUpRight className="size-5" />
-                   </div>
-                </div>
-              </div>
-            ))}
+            {banners.map((banner) => {
+              const hasLink = Boolean(banner.link);
+              const isExternal = hasLink && (banner.link!.startsWith('http://') || banner.link!.startsWith('https://'));
+              const className = 'relative rounded-2xl overflow-hidden h-[160px] lg:h-[190px] group cursor-pointer block';
+              const content = (
+                <>
+                  <img
+                    src={banner.image}
+                    alt={banner.alt}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                  <div className="absolute bottom-4 right-4 z-10">
+                    <div className="bg-white/30 backdrop-blur-md p-2.5 rounded-full text-white group-hover:bg-white group-hover:text-black transition-all shadow-lg">
+                      <ArrowUpRight className="size-5" />
+                    </div>
+                  </div>
+                </>
+              );
+              return hasLink ? (
+                <a key={banner.id} href={banner.link!} className={className} {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                  {content}
+                </a>
+              ) : (
+                <div key={banner.id} className={className}>{content}</div>
+              );
+            })}
           </div>
 
         </div>

@@ -117,15 +117,6 @@ export function Footer() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-sm text-white/70 flex flex-col md:flex-row gap-2 md:gap-4 items-center md:items-start">
               <span>© 2026 Elite Flower. Бүх эрх хуулиар хамгаалагдсан.</span>
-              <span className="hidden md:block">|</span>
-              <a 
-                href="https://www.instagram.com/coding_with_sukhee" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:text-accent transition-colors"
-              >
-                Developed by coding_with_sukhee
-              </a>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-white/70">Төлбөрийн аргууд:</span>

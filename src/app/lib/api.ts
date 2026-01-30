@@ -39,6 +39,8 @@ export interface ApiSlide {
   title: string;
   subtitle: string;
   button: string;
+  /** Гаднах холбоос (товч дарахад нээгдэх) */
+  link?: string;
   theme: string;
   sort_order: number;
   created_at: string | null;
