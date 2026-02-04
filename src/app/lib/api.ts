@@ -158,7 +158,7 @@ export async function getFeaturedProducts(): Promise<ApiProduct[]> {
 }
 
 export async function getPreorderProducts(): Promise<ApiProduct[]> {
-  const res = await getProducts({ preorder: true });
+  const res = await getProducts({ preorder: true, page_size: 48 });
   return res.products;
 }
 

@@ -3,14 +3,18 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { Heart, Timer, Sparkles, ArrowRight, Calendar, Loader2 } from 'lucide-react';
+import { Heart, Timer, Sparkles, Calendar, Loader2 } from 'lucide-react';
 import { getPreorderProducts } from '@/app/lib/api';
 
 interface Product {
   id: number;
   name: string;
+  /** Зарагдах үнэ (хямдрал байвал хямдруулсан) */
   price: number;
+  /** Анхны үнэ (зурвастай харуулах) */
   originalPrice?: number;
+  /** Хямдралын хувь (0–100) */
+  discount?: number;
   image: string;
 }
 
@@ -20,8 +24,7 @@ export function ValentinePreOrder() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + 14);
+    const targetDate = new Date(2026, 1, 14, 23, 59, 59); // 2026-02-14 23:59:59
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const distance = targetDate.getTime() - now;
@@ -43,13 +46,21 @@ export function ValentinePreOrder() {
     const fetchData = async () => {
       try {
         const list = await getPreorderProducts();
-        setProducts(list.map(p => ({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          originalPrice: p.original_price ?? undefined,
-          image: p.image,
-        })));
+        setProducts(list.map(p => {
+          const discountPercent = p.discount != null && p.discount > 0 ? p.discount : undefined;
+          const salePrice = discountPercent
+            ? Math.round(p.price * (100 - discountPercent) / 100)
+            : p.price;
+          const originalPrice = discountPercent ? p.price : (p.old_price ?? p.original_price ?? undefined);
+          return {
+            id: p.id,
+            name: p.name,
+            price: salePrice,
+            originalPrice: originalPrice ?? undefined,
+            discount: discountPercent,
+            image: p.image,
+          };
+        }));
       } catch (error) {
         console.error('Failed to fetch pre-order products', error);
       } finally {
@@ -100,8 +111,7 @@ export function ValentinePreOrder() {
             </h2>
             
             <p className="text-gray-600 text-lg leading-relaxed max-w-lg">
-              Хайртай хүндээ бэлэглэх хамгийн нандин бэлгээ эрт захиалж, 
-              <span className="font-bold text-gray-900"> 20% хөнгөлөлт</span> эдлээрэй.
+              Хайртай хүндээ бэлэглэх хамгийн нандин бэлгээ эрт захиалж, хөнгөлөлтөөр эдлээрэй.
             </p>
           </div>
 
@@ -133,7 +143,7 @@ export function ValentinePreOrder() {
         </div>
 
         {/* Product Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {products.map((product, idx) => (
             <Link key={product.id} href={`/products/${product.id}`}>
             <motion.div
@@ -175,28 +185,25 @@ export function ValentinePreOrder() {
                 </h3>
 
                 {/* Price */}
-                <div className="flex items-baseline gap-2 mb-4">
+                <div className="flex flex-wrap items-baseline gap-2 mb-4">
                   <span className="text-xl font-bold text-[#CD5C5C]">
                     {product.price.toLocaleString()}₮
                   </span>
-                  {product.originalPrice && (
-                    <span className="text-sm text-gray-400 line-through">
-                      {product.originalPrice.toLocaleString()}₮
-                    </span>
+                  {product.discount != null && product.discount > 0 && product.originalPrice != null && (
+                    <>
+                      <span className="text-sm text-gray-400 line-through">
+                        {product.originalPrice.toLocaleString()}₮
+                      </span>
+                      <span className="text-xs font-bold text-white bg-[#CD5C5C] px-2 py-0.5 rounded">
+                        -{product.discount}%
+                      </span>
+                    </>
                   )}
                 </div>
               </div>
             </motion.div>
             </Link>
           ))}
-        </div>
-        
-        {/* Footer Link */}
-        <div className="mt-12 text-center">
-          <button className="inline-flex items-center gap-2 text-gray-500 hover:text-[#CD5C5C] transition-colors font-medium border-b border-gray-200 pb-0.5 hover:border-[#CD5C5C]">
-            Бүх баярын багцыг үзэх
-            <ArrowRight className="size-4" />
-          </button>
         </div>
 
       </div>

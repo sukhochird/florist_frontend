@@ -13,8 +13,12 @@ import { getProduct, getProducts } from '@/app/lib/api';
 interface Product {
   id: number;
   name: string;
+  /** Зарагдах үнэ (хямдрал байвал хямдруулсан үнэ) */
   price: number;
-  oldPrice: number;
+  /** Хуучин/анхны үнэ (зурвастай харуулах) */
+  originalPrice: number;
+  /** Хямдралын хувь (0–100), байхгүй бол хямдралгүй */
+  discount?: number;
   description: string;
   images: string[];
   sku: string;
@@ -76,11 +80,17 @@ export default function ProductDetailPage() {
     const fetchData = async () => {
       try {
         const p = await getProduct(Number(id));
+        const discountPercent = p.discount != null && p.discount > 0 ? p.discount : undefined;
+        const originalPrice = p.old_price ?? p.price;
+        const salePrice = discountPercent
+          ? Math.round(p.price * (100 - discountPercent) / 100)
+          : p.price;
         setProduct({
           id: p.id,
           name: p.name,
-          price: p.price,
-          oldPrice: p.old_price ?? p.price,
+          price: salePrice,
+          originalPrice: discountPercent ? p.price : originalPrice,
+          discount: discountPercent,
           description: p.description,
           images: p.images?.length ? p.images : (p.image ? [p.image] : []),
           sku: p.sku,
@@ -463,10 +473,14 @@ export default function ProductDetailPage() {
                 {product.name}
               </h1>
               
-              <div className="flex items-end gap-3 mb-6">
+              <div className="flex items-end gap-3 mb-6 flex-wrap">
                 <span className="text-3xl font-bold text-accent">{product.price.toLocaleString()}₮</span>
-                <span className="text-lg text-gray-400 line-through mb-1">{product.oldPrice.toLocaleString()}₮</span>
-                <span className="mb-1 text-xs font-bold text-white bg-destructive px-2 py-0.5 rounded">-29%</span>
+                {(product.discount != null && product.discount > 0) && (
+                  <>
+                    <span className="text-lg text-gray-400 line-through mb-1">{product.originalPrice.toLocaleString()}₮</span>
+                    <span className="mb-1 text-xs font-bold text-white bg-destructive px-2 py-0.5 rounded">-{product.discount}%</span>
+                  </>
+                )}
               </div>
 
               <div
@@ -559,11 +573,27 @@ export default function ProductDetailPage() {
                 <div className="border-t border-gray-200 pt-6 space-y-2 text-sm">
                   <div className="grid grid-cols-[120px_1fr] gap-2">
                     <span className="text-gray-500">Бүтээгдэхүүний код:</span>
-                    <span className="font-medium text-gray-900">{product.sku}</span>
+                    <span className="font-medium text-gray-900">{product.sku || '—'}</span>
                   </div>
                   <div className="grid grid-cols-[120px_1fr] gap-2">
                     <span className="text-gray-500">Ангилал:</span>
-                    <span className="font-medium text-gray-900">{product.category}</span>
+                    <span className="font-medium text-gray-900">{product.category || '—'}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] gap-2">
+                    <span className="text-gray-500">Цэцгийн төрөл:</span>
+                    <span className="font-medium text-gray-900">{product.details?.type || '—'}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] gap-2">
+                    <span className="text-gray-500">Тоо ширхэг:</span>
+                    <span className="font-medium text-gray-900">{product.details?.count || '—'}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] gap-2">
+                    <span className="text-gray-500">Баглаа боодол:</span>
+                    <span className="font-medium text-gray-900">{product.details?.packaging || '—'}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr] gap-2">
+                    <span className="text-gray-500">Өндөр:</span>
+                    <span className="font-medium text-gray-900">{product.details?.height || '—'}</span>
                   </div>
                 </div>
 
@@ -610,12 +640,14 @@ export default function ProductDetailPage() {
                   className="mb-4 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-semibold [&_h2]:mt-4 [&_h3]:font-medium [&_h3]:mt-3 [&_a]:text-accent [&_a]:underline [&_strong]:font-semibold"
                   dangerouslySetInnerHTML={{ __html: product.description || '' }}
                 />
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>Цэцгийн төрөл: {product.details.type}</li>
-                  <li>Тоо ширхэг: {product.details.count}</li>
-                  <li>Баглаа боодол: {product.details.packaging}</li>
-                  <li>Өндөр: {product.details.height}</li>
-                </ul>
+                {(product.details?.type || product.details?.count || product.details?.packaging || product.details?.height) && (
+                  <ul className="list-disc pl-5 space-y-2 mt-4">
+                    {product.details?.type && <li>Цэцгийн төрөл: {product.details.type}</li>}
+                    {product.details?.count && <li>Тоо ширхэг: {product.details.count}</li>}
+                    {product.details?.packaging && <li>Баглаа боодол: {product.details.packaging}</li>}
+                    {product.details?.height && <li>Өндөр: {product.details.height}</li>}
+                  </ul>
+                )}
               </motion.div>
             )}
             {activeTab === 'delivery' && (
