@@ -11,13 +11,26 @@ interface Category {
   subcategories?: Category[];
 }
 
-export function FlowerTypesNav() {
+interface FlowerTypesNavProps {
+  /** Сонгосон ангиллын slug — 'all' эсвэл категорийн slug */
+  activeType?: string;
+  /** Ангилал солиход дуудагдана */
+  onActiveTypeChange?: (slug: string) => void;
+}
+
+export function FlowerTypesNav({ activeType: controlledActive, onActiveTypeChange }: FlowerTypesNavProps = {}) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
-  const [activeType, setActiveType] = useState('all');
+  const [internalActive, setInternalActive] = useState('all');
   const [flowerTypes, setFlowerTypes] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const activeType = controlledActive ?? internalActive;
+  const setActiveType = (slug: string) => {
+    if (onActiveTypeChange) onActiveTypeChange(slug);
+    else setInternalActive(slug);
+  };
 
   useEffect(() => {
     const fetchData = async () => {

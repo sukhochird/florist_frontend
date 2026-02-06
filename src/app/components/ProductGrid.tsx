@@ -8,10 +8,13 @@ import { useFavorites } from '@/app/context/FavoritesContext';
 export interface Product {
   id: number;
   name: string;
+  /** Зарагдах үнэ (хямдрал байвал хямдруулсан) */
   price: number;
   installmentPrice?: number;
   image: string;
   discount?: number;
+  /** Анхны үнэ (зурвастай харуулах, хямдралтай үед) */
+  originalPrice?: number;
   isPreOrder?: boolean;
   deliveryDate?: string; // Added for Pre-order
   remainingStock?: number; // Added for Pre-order
@@ -135,9 +138,9 @@ export function ProductGrid({
                 <div className="flex flex-col">
                   <div className="flex items-baseline gap-2">
                     <span className="text-lg font-bold text-foreground">{product.price.toLocaleString()}₮</span>
-                    {product.discount && (
+                    {product.discount != null && product.discount > 0 && (
                       <span className="text-sm text-muted-foreground line-through decoration-destructive/50">
-                        {Math.round(product.price * (1 + product.discount / 100)).toLocaleString()}₮
+                        {(product.originalPrice ?? Math.round(product.price * 100 / (100 - product.discount))).toLocaleString()}₮
                       </span>
                     )}
                   </div>

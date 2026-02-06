@@ -3,37 +3,54 @@
 import { useState, useEffect } from 'react';
 import { ProductGrid, Product } from '@/app/components/ProductGrid';
 import { Loader2 } from 'lucide-react';
-import { getFeaturedProducts } from '@/app/lib/api';
+import { getProducts } from '@/app/lib/api';
 
-function mapApiProductToGrid(p: { id: number; name: string; price: number; image: string; discount?: number | null; is_pre_order?: boolean }): Product {
+function mapApiProductToGrid(p: { id: number; name: string; price: number; image: string; discount?: number | null; is_pre_order?: boolean; category?: string }): Product {
+  const rawPrice = Number(p.price) || 0;
+  const discountPercent = p.discount != null && p.discount > 0 ? p.discount : undefined;
+  const salePrice = discountPercent
+    ? Math.round(rawPrice * (100 - discountPercent) / 100)
+    : rawPrice;
   return {
     id: p.id,
     name: p.name,
-    price: p.price,
+    price: salePrice,
     image: p.image,
-    discount: p.discount ?? undefined,
+    discount: discountPercent,
     isPreOrder: p.is_pre_order,
+    originalPrice: discountPercent ? rawPrice : undefined,
   };
 }
 
-export function FeaturedProductsSection() {
+interface FeaturedProductsSectionProps {
+  /** Ангилал (slug) — өгвөл тухайн ангиллын онцлох бүтээгдэхүүн л харуулна */
+  categorySlug?: string;
+}
+
+export function FeaturedProductsSection({ categorySlug }: FeaturedProductsSectionProps = {}) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const list = await getFeaturedProducts();
-        setProducts(list.map(mapApiProductToGrid));
+        const res = await getProducts({
+          featured: true,
+          category: categorySlug || undefined,
+          page_size: 48,
+        });
+        setProducts((res.products || []).map(mapApiProductToGrid));
       } catch (error) {
         console.error('Failed to fetch featured products', error);
+        setProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [categorySlug]);
 
   if (isLoading) {
     return (
