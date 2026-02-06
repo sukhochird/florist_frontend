@@ -17,14 +17,29 @@ interface Category {
   subcategories?: Category[];
 }
 
-function mapApiProductToGrid(p: ApiProduct): Product {
+/** API-ийн үнэ = анхны үнэ. Хямдралтай бол зарагдах үнийг тооцоолно. */
+function toDisplayProduct(p: ApiProduct): ApiProduct & { originalPrice: number } {
+  const rawPrice = Number(p.price) || 0;
+  const discountPercent = p.discount != null && p.discount > 0 ? p.discount : null;
+  const salePrice = discountPercent
+    ? Math.round(rawPrice * (100 - discountPercent) / 100)
+    : rawPrice;
   return {
-    id: p.id,
-    name: p.name,
-    price: p.price,
-    image: p.image,
-    discount: p.discount ?? undefined,
-    isPreOrder: p.is_pre_order,
+    ...p,
+    price: salePrice,
+    originalPrice: rawPrice,
+  };
+}
+
+function mapApiProductToGrid(p: ApiProduct): Product {
+  const d = toDisplayProduct(p);
+  return {
+    id: d.id,
+    name: d.name,
+    price: d.price,
+    image: d.image,
+    discount: d.discount ?? undefined,
+    isPreOrder: d.is_pre_order,
   };
 }
 
@@ -38,18 +53,19 @@ function ProductsPageContent() {
   const currentPage = pageParam ? Math.max(1, parseInt(pageParam, 10) || 1) : 1;
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10_000_000]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const { toggleFavorite, isFavorite } = useFavorites();
   const [categories, setCategories] = useState<Category[]>([]);
   const [occasionCategory, setOccasionCategory] = useState<Category | null>(null);
-  const [products, setProducts] = useState<ApiProduct[]>([]);
+  type ProductWithDisplayPrice = ApiProduct & { originalPrice: number };
+  const [products, setProducts] = useState<ProductWithDisplayPrice[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [productsLoading, setProductsLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  const PAGE_SIZE = 12;
+  const PAGE_SIZE = 500;
 
   const setFilters = useCallback((params: { category?: string | null; occasion?: string | null; page?: number | null }) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -98,7 +114,7 @@ function ProductsPageContent() {
           page: currentPage,
           page_size: PAGE_SIZE,
         });
-        setProducts(res.products);
+        setProducts((res.products || []).map(toDisplayProduct));
         setTotalCount(res.count);
         setTotalPages(res.total_pages);
       } catch (e) {
@@ -279,7 +295,7 @@ function ProductsPageContent() {
                     <input 
                       type="range" 
                       min="0" 
-                      max="500000" 
+                      max="10000000" 
                       step="1000"
                       value={priceRange[1]}
                       onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
@@ -425,9 +441,9 @@ function ProductsPageContent() {
                       <div className="flex flex-col">
                         <div className="flex items-baseline gap-2">
                           <span className="text-lg font-bold text-foreground">{product.price.toLocaleString()}₮</span>
-                          {product.discount && (
+                          {product.discount && product.originalPrice != null && (
                             <span className="text-sm text-muted-foreground line-through decoration-destructive/50">
-                              {Math.round(product.price * (100 / (100 - product.discount))).toLocaleString()}₮
+                              {product.originalPrice.toLocaleString()}₮
                             </span>
                           )}
                         </div>
@@ -450,7 +466,7 @@ function ProductsPageContent() {
                 <button 
                   onClick={() => {
                     setFilters({ category: null, occasion: null });
-                    setPriceRange([0, 500000]);
+                    setPriceRange([0, 10_000_000]);
                   }}
                   className="mt-4 text-accent underline hover:text-accent/80"
                 >
