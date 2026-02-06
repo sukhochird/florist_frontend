@@ -23,7 +23,7 @@ export function Footer() {
             </p>
             <div className="flex gap-3 pt-1">
               <a
-                href="https://www.instagram.com/eliteflower_/"
+                href="https://www.instagram.com/eliteflower.mn/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2.5 bg-white/10 rounded-full hover:bg-white hover:text-primary transition-colors"

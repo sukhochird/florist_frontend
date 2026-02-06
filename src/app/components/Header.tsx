@@ -20,14 +20,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useCart } from "@/app/context/CartContext";
 import { useFavorites } from "@/app/context/FavoritesContext";
 import Image from "next/image";
-import { getCategories, getOccasions } from '@/app/lib/api';
-
-interface Category {
-  id: number | string;
-  name: string;
-  slug: string;
-  subcategories?: Category[];
-}
+import { getHeaderMenu, type ApiHeaderMenuItem } from '@/app/lib/api';
 
 export function Header() {
   const router = useRouter();
@@ -35,34 +28,15 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { totalItems, setIsCartOpen } = useCart();
   const { favoritesCount } = useFavorites();
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [occasionsCat, setOccasionsCat] = useState<Category | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState<number | null>(null);
+  const [navItems, setNavItems] = useState<ApiHeaderMenuItem[]>([]);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [cats, occasions] = await Promise.all([getCategories(), getOccasions(true)]);
-        setCategories(cats as Category[]);
-        setOccasionsCat({
-          id: 'occasions',
-          name: 'Баяр ёслол',
-          slug: 'occasions',
-          subcategories: occasions.map(o => ({ id: o.id, name: o.title, slug: o.slug, subcategories: [] })),
-        });
-      } catch (e) {
-        console.error('Header: failed to load nav data', e);
-      }
-    };
-    load();
+    getHeaderMenu()
+      .then((items) => setNavItems(items ?? []))
+      .catch((e) => console.error('Header: failed to load menu', e));
   }, []);
-
-  const allNavCategories = occasionsCat ? [...categories, occasionsCat] : categories;
-  const getCategoryBySlug = (slug: string) => allNavCategories.find((c: Category) => c.slug === slug);
-  const flowersCat = getCategoryBySlug('flowers');
-  const plantsCat = getCategoryBySlug('plants');
-  const giftsCat = getCategoryBySlug('gifts');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -73,46 +47,47 @@ export function Header() {
       window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navItems = [
-    { 
-      label: "Нүүр хуудас", 
-      hasDropdown: false, 
-      route: '/',
-      id: 'home'
-    },
-    { 
-      label: "Валентин 💝", 
-      hasDropdown: false, 
-      route: 'products',
-      id: 'valentine' 
-    },
-    { 
-      label: "Бүтээгдэхүүн", 
-      hasDropdown: false, 
-      route: 'products', 
-      id: 'products'
-    },
-    { 
-      label: "Баяр ёслол", 
-      hasDropdown: true, 
-      route: 'products', 
-      id: 'occasions',
-      children: occasionsCat?.subcategories || []
-    },
-    { 
-      label: "Бэлэг дурсгал", 
-      hasDropdown: true, 
-      route: 'products', 
-      id: 'gifts',
-      children: giftsCat?.subcategories || []
-    },
-    { 
-      label: "Холбоо барих", 
-      hasDropdown: false, 
-      route: 'contact',
-      id: 'contact' 
-    },
-  ];
+  const isExternal = (item: ApiHeaderMenuItem) => item.link_type === 'external';
+  const hasDropdown = (item: ApiHeaderMenuItem) => item.children && item.children.length > 0;
+
+  const renderLink = (item: ApiHeaderMenuItem, className: string) => {
+    if (isExternal(item)) {
+      return (
+        <a
+          href={item.href || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={className}
+        >
+          {item.label}
+        </a>
+      );
+    }
+    if (item.link_type === 'fragment') {
+      return (
+        <a
+          href={item.href}
+          onClick={(e) => {
+            e.preventDefault();
+            const [path, hash] = item.href.split('#');
+            router.push(path || '/');
+            setTimeout(() => {
+              const el = hash ? document.getElementById(hash) : null;
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }, 150);
+          }}
+          className={className}
+        >
+          {item.label}
+        </a>
+      );
+    }
+    return (
+      <Link href={item.href || '/'} className={className}>
+        {item.label}
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -133,7 +108,7 @@ export function Header() {
               YouTube
             </a>
             <a
-              href="https://www.instagram.com/eliteflower_/"
+              href="https://www.instagram.com/eliteflower.mn/"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 opacity-80 hover:opacity-100 hover:text-accent transition-all"
@@ -205,71 +180,69 @@ export function Header() {
                 <div
                   key={item.id}
                   className="relative group"
-                  onMouseEnter={() => item.hasDropdown && setActiveDropdown(item.id)}
+                  onMouseEnter={() => hasDropdown(item) && setActiveDropdown(item.id)}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
-                  {item.id === 'valentine' ? (
-                    <a
-                      href="/#valentine-preorder"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        router.push('/');
-                        setTimeout(() => {
-                          document.getElementById('valentine-preorder')?.scrollIntoView({ behavior: 'smooth' });
-                        }, 100);
-                      }}
-                      className="flex items-center gap-1.5 text-sm font-medium hover:text-accent transition-colors relative py-2"
-                    >
-                      {item.label}
-                      {item.hasDropdown && <ChevronDown className="size-3 opacity-50 group-hover:opacity-100 transition-opacity" />}
-                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left" />
-                    </a>
-                  ) : item.route ? (
-                    <Link
-                      href={item.route === 'contact' ? '/contact' : item.route === 'products' ? '/products' : '/'}
-                      className="flex items-center gap-1.5 text-sm font-medium hover:text-accent transition-colors relative py-2"
-                    >
-                      {item.label}
-                      {item.hasDropdown && <ChevronDown className="size-3 opacity-50 group-hover:opacity-100 transition-opacity" />}
-                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left" />
-                    </Link>
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-sm font-medium hover:text-accent transition-colors relative py-2">
-                      {item.label}
-                      {item.hasDropdown && <ChevronDown className="size-3 opacity-50 group-hover:opacity-100 transition-opacity" />}
-                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left" />
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1.5 text-sm font-medium hover:text-accent transition-colors relative py-2">
+                    {renderLink(item, 'inline-flex items-center gap-1.5 hover:text-accent transition-colors')}
+                    {hasDropdown(item) && <ChevronDown className="size-3 opacity-50 group-hover:opacity-100 transition-opacity" />}
+                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left" />
+                  </span>
 
                   {/* Dropdown Menu */}
-                  {item.hasDropdown && item.children && (
-                    <div 
-                      className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 w-[220px] lg:w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top`}
+                  {hasDropdown(item) && item.children && (
+                    <div
+                      className="absolute top-full left-1/2 -translate-x-1/2 pt-2 w-[220px] lg:w-[260px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top"
                     >
                       <div className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden p-2">
-                        {item.children.map((child, idx) => (
-                          <div key={idx} className="relative group/sub">
-                            <Link 
-                              href="/products"
-                              className="flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-md transition-colors"
-                            >
-                              {child.name}
-                              {child.subcategories && child.subcategories.length > 0 && (
-                                <ChevronRight className="size-3.5 opacity-50" />
-                              )}
-                            </Link>
-
+                        {item.children.map((child) => (
+                          <div key={child.id} className="relative group/sub">
+                            {isExternal(child) ? (
+                              <a
+                                href={child.href || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                {child.label}
+                                {child.children?.length ? <ChevronRight className="size-3.5 opacity-50" /> : null}
+                              </a>
+                            ) : child.link_type === 'fragment' ? (
+                              <a
+                                href={child.href}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const [path, hash] = child.href.split('#');
+                                  router.push(path || '/');
+                                  setTimeout(() => document.getElementById(hash || '')?.scrollIntoView({ behavior: 'smooth' }), 150);
+                                }}
+                                className="flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                {child.label}
+                                {child.children?.length ? <ChevronRight className="size-3.5 opacity-50" /> : null}
+                              </a>
+                            ) : (
+                              <Link
+                                href={child.href || '/'}
+                                className="flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                {child.label}
+                                {child.children?.length ? <ChevronRight className="size-3.5 opacity-50" /> : null}
+                              </Link>
+                            )}
                             {/* Level 2 Submenu (Flyout) */}
-                            {child.subcategories && child.subcategories.length > 0 && (
+                            {child.children && child.children.length > 0 && (
                               <div className="absolute top-0 left-full ml-2 w-[200px] bg-white rounded-lg shadow-xl border border-gray-100 p-2 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible transition-all duration-200">
-                                {child.subcategories.map((sub, subIdx) => (
-                                  <Link
-                                    key={subIdx}
-                                    href="/products"
-                                    className="block px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-md transition-colors"
-                                  >
-                                    {sub.name}
-                                  </Link>
+                                {child.children.map((sub) => (
+                                  <span key={sub.id}>
+                                    {isExternal(sub) ? (
+                                      <a href={sub.href || '#'} target="_blank" rel="noopener noreferrer" className="block px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-md transition-colors">{sub.label}</a>
+                                    ) : sub.link_type === 'fragment' ? (
+                                      <a href={sub.href} onClick={(e) => { e.preventDefault(); const [path, hash] = sub.href.split('#'); router.push(path || '/'); setTimeout(() => document.getElementById(hash || '')?.scrollIntoView({ behavior: 'smooth' }), 150); }} className="block px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-md transition-colors">{sub.label}</a>
+                                    ) : (
+                                      <Link href={sub.href || '/'} className="block px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-md transition-colors">{sub.label}</Link>
+                                    )}
+                                  </span>
                                 ))}
                               </div>
                             )}
@@ -367,56 +340,88 @@ export function Header() {
               <div className="flex-1 overflow-y-auto py-2">
                 {navItems.map((item) => (
                   <div key={item.id}>
-                    <div 
+                    <div
                       className="flex items-center justify-between px-6 py-3 hover:bg-secondary transition-colors text-sm font-medium"
                       onClick={(e) => {
-                        if (item.hasDropdown) {
+                        if (hasDropdown(item)) {
                           e.preventDefault();
                           setMobileExpanded(mobileExpanded === item.id ? null : item.id);
-                        } else if (item.route) {
+                        } else if (isExternal(item)) {
+                          // external: allow default <a> or open in same tab
+                        } else {
                           e.preventDefault();
-                          router.push(item.route === 'contact' ? '/contact' : item.route === 'products' ? '/products' : '/');
-                          setIsMenuOpen(false);
+                          if (item.link_type === 'fragment') {
+                            const [path, hash] = item.href.split('#');
+                            router.push(path || '/');
+                            setIsMenuOpen(false);
+                            setTimeout(() => document.getElementById(hash || '')?.scrollIntoView({ behavior: 'smooth' }), 150);
+                          } else {
+                            router.push(item.href || '/');
+                            setIsMenuOpen(false);
+                          }
                         }
                       }}
                     >
-                      {item.label}
-                      {item.hasDropdown && (
+                      {isExternal(item) ? (
+                        <a href={item.href || '#'} target="_blank" rel="noopener noreferrer" className="flex-1" onClick={() => setIsMenuOpen(false)}>
+                          {item.label}
+                        </a>
+                      ) : (
+                        <span className="flex-1">{item.label}</span>
+                      )}
+                      {hasDropdown(item) && (
                         <ChevronDown className={`size-4 opacity-50 transition-transform ${mobileExpanded === item.id ? 'rotate-180' : ''}`} />
                       )}
                     </div>
 
                     {/* Mobile Submenu */}
                     <AnimatePresence>
-                      {item.hasDropdown && mobileExpanded === item.id && item.children && (
+                      {hasDropdown(item) && mobileExpanded === item.id && item.children && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           className="bg-gray-50 overflow-hidden"
                         >
-                          {item.children.map((child, idx) => (
-                            <div key={idx} className="pl-6">
+                          {item.children.map((child) => (
+                            <div key={child.id} className="pl-6">
                               <div className="flex items-center justify-between pr-6 py-2.5 text-sm text-gray-600">
-                                {child.name}
-                                {child.subcategories && child.subcategories.length > 0 && (
+                                {isExternal(child) ? (
+                                  <a href={child.href || '#'} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>{child.label}</a>
+                                ) : child.link_type === 'fragment' ? (
+                                  <a
+                                    href={child.href}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      const [path, hash] = child.href.split('#');
+                                      router.push(path || '/');
+                                      setIsMenuOpen(false);
+                                      setTimeout(() => document.getElementById(hash || '')?.scrollIntoView({ behavior: 'smooth' }), 150);
+                                    }}
+                                  >
+                                    {child.label}
+                                  </a>
+                                ) : (
+                                  <Link href={child.href || '/'} onClick={() => setIsMenuOpen(false)}>{child.label}</Link>
+                                )}
+                                {child.children && child.children.length > 0 && (
                                   <span className="text-[10px] text-gray-400 bg-white px-1.5 py-0.5 rounded border border-gray-200">
-                                    {child.subcategories.length}
+                                    {child.children.length}
                                   </span>
                                 )}
                               </div>
-                              {/* Mobile Level 3 */}
-                              {child.subcategories && (
+                              {child.children && child.children.length > 0 && (
                                 <div className="pl-4 border-l border-gray-200 mb-2">
-                                  {child.subcategories.map((sub, subIdx) => (
-                                    <Link
-                                      key={subIdx}
-                                      href="/products"
-                                      onClick={() => setIsMenuOpen(false)}
-                                      className="block py-2 text-sm text-gray-500 hover:text-accent"
-                                    >
-                                      {sub.name}
-                                    </Link>
+                                  {child.children.map((sub) => (
+                                    <span key={sub.id}>
+                                      {isExternal(sub) ? (
+                                        <a href={sub.href || '#'} target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)} className="block py-2 text-sm text-gray-500 hover:text-accent">{sub.label}</a>
+                                      ) : sub.link_type === 'fragment' ? (
+                                        <a href={sub.href} onClick={(e) => { e.preventDefault(); const [path, hash] = sub.href.split('#'); router.push(path || '/'); setIsMenuOpen(false); setTimeout(() => document.getElementById(hash || '')?.scrollIntoView({ behavior: 'smooth' }), 150); }} className="block py-2 text-sm text-gray-500 hover:text-accent">{sub.label}</a>
+                                      ) : (
+                                        <Link href={sub.href || '/'} onClick={() => setIsMenuOpen(false)} className="block py-2 text-sm text-gray-500 hover:text-accent">{sub.label}</Link>
+                                      )}
+                                    </span>
                                   ))}
                                 </div>
                               )}

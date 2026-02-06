@@ -116,6 +116,23 @@ export async function getCategories(): Promise<ApiCategory[]> {
   return data.categories;
 }
 
+// ——— Header menu (admin-аас удирдагддаг цэс) ———
+
+export type HeaderMenuLinkType = 'external' | 'internal' | 'fragment';
+
+export interface ApiHeaderMenuItem {
+  id: number;
+  label: string;
+  link_type: HeaderMenuLinkType;
+  href: string;
+  children: ApiHeaderMenuItem[];
+}
+
+export async function getHeaderMenu(): Promise<ApiHeaderMenuItem[]> {
+  const data = await fetchApi<{ items: ApiHeaderMenuItem[] }>('/api/header-menu/');
+  return data.items ?? [];
+}
+
 export interface GetProductsParams {
   featured?: boolean;
   preorder?: boolean;
