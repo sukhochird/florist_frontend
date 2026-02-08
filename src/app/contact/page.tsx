@@ -43,7 +43,7 @@ export default function ContactPage() {
             >
                 <div className="h-64 overflow-hidden relative">
                     <img 
-                        src="https://images.unsplash.com/photo-1624924224849-5338c9416756?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmbG93ZXIlMjBzaG9wJTIwc3RvcmUlMjBmcm9udCUyMGV4dGVyaW9yfGVufDF8fHx8MTc2OTY2OTc5OHww&ixlib=rb-4.1.0&q=80&w=1080" 
+                        src="https://shopo.sgp1.cdn.digitaloceanspaces.com/eliteflower/hero_slides/c04b84cf-c42d-4743-ac33-6c07fad05b52_4.jpeg" 
                         alt="Branch 1 Exterior" 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
@@ -152,6 +152,18 @@ export default function ContactPage() {
                         <p className="font-medium">9091-5955, 9091-5595</p>
                     </div>
                 </div>
+
+                <div className="w-px h-10 bg-gray-200 hidden md:block" />
+
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-full text-accent shadow-sm">
+                        <Phone className="size-5" />
+                    </div>
+                    <div className="text-left">
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">Байгууллага болон Хуримын захиалага</p>
+                        <a href="tel:90914444" className="font-medium hover:text-accent transition-colors">9091-4444</a>
+                    </div>
+                </div>
             </div>
         </motion.div>
         
@@ -166,7 +178,7 @@ export default function ContactPage() {
             <div className="rounded-2xl overflow-hidden shadow-lg border border-gray-200 h-[400px] md:h-[480px] relative bg-gray-100">
                 <iframe
                     title="Улаанбаатар хот дахь Elite Flower салбарууд"
-                    src="https://www.openstreetmap.org/export/embed.html?bbox=106.864%2C47.911%2C106.896%2C47.918&layer=mapnik&marker=47.914473952210926%2C106.86918788997626&marker=47.91424099979911%2C106.89043459967198"
+                    src="https://www.openstreetmap.org/export/embed.html?bbox=106.864%2C47.911%2C106.896%2C47.918&layer=mapnik&marker=47.914473952210926%2C106.86918788997626&marker=47.91420800697665%2C106.89127486356195"
                     className="w-full h-full border-0 block"
                     allowFullScreen
                     loading="lazy"

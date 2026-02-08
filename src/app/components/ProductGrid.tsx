@@ -26,6 +26,10 @@ interface ProductGridProps {
   products: Product[]; // Required data
   onProductClick?: (id: number) => void;
   onViewAll?: () => void;
+  /** "Бүгдийг үзэх" товчны текст (жишээ: "Бүх бүтээгдэхүүн") */
+  viewAllLabel?: string;
+  /** Жагсаалтын доор "Бүгдийг үзэх" товч харуулах эсэх (desktop дээр ч) */
+  showViewAllBelow?: boolean;
 }
 
 export function ProductGrid({ 
@@ -33,7 +37,9 @@ export function ProductGrid({
   subtitle = "Таны сонголтод",
   products, 
   onProductClick, 
-  onViewAll 
+  onViewAll,
+  viewAllLabel = "Бүгдийг үзэх",
+  showViewAllBelow = false,
 }: ProductGridProps) {
   const { toggleFavorite, isFavorite } = useFavorites();
   
@@ -64,7 +70,7 @@ export function ProductGrid({
             href="/products"
             className="hidden md:flex items-center gap-2 text-sm font-medium hover:text-accent transition-colors group"
           >
-            Бүгдийг үзэх
+            {viewAllLabel}
             <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
@@ -151,13 +157,13 @@ export function ProductGrid({
           ))}
         </motion.div>
 
-        {/* Mobile View All Button */}
-        <div className="md:hidden mt-10 text-center">
+        {/* View All Button — mobile дээр үргэлж, showViewAllBelow үед desktop дээр ч */}
+        <div className={`mt-10 text-center ${showViewAllBelow ? '' : 'md:hidden'}`}>
           <Link 
             href="/products"
-            className="block px-8 py-3 border border-border rounded-full hover:border-black transition-colors w-full font-medium text-sm text-center"
+            className="inline-block px-8 py-3 border border-border rounded-full hover:border-black transition-colors font-medium text-sm"
           >
-            Бүгдийг үзэх
+            {viewAllLabel}
           </Link>
         </div>
       </div>

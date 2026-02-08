@@ -136,6 +136,12 @@ export async function getHeaderMenu(): Promise<ApiHeaderMenuItem[]> {
 export interface GetProductsParams {
   featured?: boolean;
   preorder?: boolean;
+  /** Онцлох бүтээгдэхүүнийг хасах (сүүлийн нэмэгдсэн хэсэгт) */
+  exclude_featured?: boolean;
+  /** Захиалгаар бүтээгдэхүүнийг хасах (сүүлийн нэмэгдсэн хэсэгт) */
+  exclude_preorder?: boolean;
+  /** Эрэмбэ: recent = сүүлийн нэмэгдсэн (created_at) */
+  ordering?: 'recent';
   /** Ангилал — Category slug */
   category?: string;
   /** Баяр ёслол — Occasion slug */
@@ -158,6 +164,9 @@ export async function getProducts(params?: GetProductsParams): Promise<GetProduc
   const q: Record<string, string> = {};
   if (params?.featured) q.featured = '1';
   if (params?.preorder) q.preorder = '1';
+  if (params?.exclude_featured) q.exclude_featured = '1';
+  if (params?.exclude_preorder) q.exclude_preorder = '1';
+  if (params?.ordering === 'recent') q.ordering = 'recent';
   if (params?.category) q.category = params.category;
   if (params?.occasion) q.occasion = params.occasion;
   if (params?.page != null) q.page = String(params.page);
