@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { Heart, Timer, Sparkles, Calendar, Loader2 } from 'lucide-react';
+import { Flower2, Timer, Sparkles, Calendar, Loader2 } from 'lucide-react';
 import { getPreorderProducts } from '@/app/lib/api';
 
 interface Product {
@@ -18,13 +18,15 @@ interface Product {
   image: string;
 }
 
-export function ValentinePreOrder() {
+const ACCENT = '#8B5CF6'; // МАРТ 8 өнгө
+
+export function March8PreOrder() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const targetDate = new Date(2026, 1, 14, 23, 59, 59); // 2026-02-14 23:59:59
+    const targetDate = new Date(2026, 2, 8, 23, 59, 59); // 2026-03-08 23:59:59
     const interval = setInterval(() => {
       const now = new Date().getTime();
       const distance = targetDate.getTime() - now;
@@ -73,23 +75,22 @@ export function ValentinePreOrder() {
 
   if (isLoading) {
     return (
-      <section className="relative py-16 md:py-20 overflow-hidden bg-gradient-to-b from-[#FFF0F5] to-white h-[600px] flex items-center justify-center">
-         <Loader2 className="size-10 animate-spin text-[#CD5C5C]" />
+      <section className="relative py-16 md:py-20 overflow-hidden bg-gradient-to-b from-[#F5F0FF] to-white h-[600px] flex items-center justify-center">
+         <Loader2 className="size-10 animate-spin" style={{ color: ACCENT }} />
       </section>
     );
   }
 
   return (
-    <section id="valentine-preorder" className="relative py-16 md:py-20 overflow-hidden bg-gradient-to-b from-[#FFF0F5] to-white">
+    <section id="mart8-preorder" className="relative py-16 md:py-20 overflow-hidden bg-gradient-to-b from-[#F5F0FF] to-white">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -right-20 text-pink-100 opacity-50 rotate-12">
-          <Heart size={400} fill="currentColor" />
+        <div className="absolute -top-20 -right-20 text-violet-100 opacity-50 rotate-12">
+          <Flower2 size={400} stroke="currentColor" />
         </div>
-        <div className="absolute top-40 -left-20 text-pink-100 opacity-40 -rotate-12">
-          <Heart size={300} fill="currentColor" />
+        <div className="absolute top-40 -left-20 text-violet-100 opacity-40 -rotate-12">
+          <Flower2 size={300} stroke="currentColor" />
         </div>
-        {/* Floating petals effect could go here */}
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 md:px-8 relative z-10">
@@ -100,24 +101,25 @@ export function ValentinePreOrder() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#CD5C5C]/10 text-[#CD5C5C] rounded-full text-xs font-bold uppercase tracking-wider mb-6"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6"
+              style={{ backgroundColor: `${ACCENT}20`, color: ACCENT }}
             >
               <Sparkles className="size-3" />
               <span>Limited Edition</span>
             </motion.div>
             
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-gray-900 leading-[1.1] mb-6">
-              Valentine's <span className="text-[#CD5C5C] italic">Collection</span>
+              МАРТ 8 <span className="italic" style={{ color: ACCENT }}>Collection</span>
             </h2>
             
             <p className="text-gray-600 text-lg leading-relaxed max-w-lg">
-              Хайртай хүндээ бэлэглэх хамгийн нандин бэлгээ эрт захиалж, хөнгөлөлтөөр эдлээрэй.
+              Ээждээ, эхнэртээ, охиндоо бэлэглэх хамгийн сайхан бэлэг. Эрт захиалж хөнгөлөлтөөр аваарай.
             </p>
           </div>
 
           {/* Countdown Card */}
-          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl shadow-pink-100 border border-pink-100 min-w-[300px] md:min-w-[380px]">
-            <div className="flex items-center gap-2 text-[#CD5C5C] mb-6 justify-center">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl border min-w-[300px] md:min-w-[380px] border-violet-100 shadow-violet-100/50">
+            <div className="flex items-center gap-2 mb-6 justify-center" style={{ color: ACCENT }}>
               <Timer className="size-5" />
               <span className="font-bold uppercase tracking-wider text-sm">Урьдчилсан захиалга дуусахад</span>
             </div>
@@ -151,10 +153,10 @@ export function ValentinePreOrder() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
               whileHover={{ y: -10 }}
-              className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-pink-100/50 transition-all duration-300 border border-pink-50 cursor-pointer flex flex-col h-full"
+              className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-violet-50 cursor-pointer flex flex-col h-full hover:shadow-violet-100/50"
             >
               {/* Image Container */}
-              <div className="relative aspect-[3/4] overflow-hidden bg-pink-50">
+              <div className="relative aspect-[3/4] overflow-hidden bg-violet-50">
                 <img 
                   src={product.image} 
                   alt={product.name}
@@ -167,26 +169,26 @@ export function ValentinePreOrder() {
                 {/* Badges */}
                 <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
                   <div className="flex flex-col gap-2">
-                    <span className="bg-white/95 backdrop-blur text-[#CD5C5C] px-3 py-1 rounded-md text-xs font-bold shadow-sm flex items-center gap-1.5">
+                    <span className="bg-white/95 backdrop-blur px-3 py-1 rounded-md text-xs font-bold shadow-sm flex items-center gap-1.5" style={{ color: ACCENT }}>
                       <Calendar className="size-3" />
-                      Feb 14
+                      Mar 8
                     </span>
                   </div>
-                  <div className="bg-[#CD5C5C] text-white p-2 rounded-full shadow-lg">
-                    <Heart className="size-4 fill-current" />
+                  <div className="p-2 rounded-full shadow-lg text-white" style={{ backgroundColor: ACCENT }}>
+                    <Flower2 className="size-4" />
                   </div>
                 </div>
               </div>
 
               {/* Content */}
               <div className="p-5 flex flex-col flex-1">
-                <h3 className="font-serif text-lg text-gray-900 leading-tight mb-2 group-hover:text-[#CD5C5C] transition-colors">
+                <h3 className="font-serif text-lg text-gray-900 leading-tight mb-2 transition-colors group-hover:text-violet-600">
                   {product.name}
                 </h3>
 
                 {/* Price */}
                 <div className="flex flex-wrap items-baseline gap-2 mb-4">
-                  <span className="text-xl font-bold text-[#CD5C5C]">
+                  <span className="text-xl font-bold" style={{ color: ACCENT }}>
                     {product.price.toLocaleString()}₮
                   </span>
                   {product.discount != null && product.discount > 0 && product.originalPrice != null && (
@@ -194,7 +196,7 @@ export function ValentinePreOrder() {
                       <span className="text-sm text-gray-400 line-through">
                         {product.originalPrice.toLocaleString()}₮
                       </span>
-                      <span className="text-xs font-bold text-white bg-[#CD5C5C] px-2 py-0.5 rounded">
+                      <span className="text-xs font-bold text-white px-2 py-0.5 rounded" style={{ backgroundColor: ACCENT }}>
                         -{product.discount}%
                       </span>
                     </>
