@@ -259,7 +259,7 @@ export function Header() {
             {/* Action icons */}
             <div className="flex items-center gap-2 md:gap-4">
               <a
-                href="https://www.facebook.com/messages/t/101541682775777"
+                href="https://www.messenger.com/t/101541682775777"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2.5 hover:bg-[#F5F5F5] rounded-full transition-colors hidden md:flex items-center justify-center text-[#0084FF]"
