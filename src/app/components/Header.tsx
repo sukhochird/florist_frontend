@@ -12,7 +12,6 @@ import {
   Youtube,
   Instagram,
   Facebook,
-  MessageCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -258,15 +257,6 @@ export function Header() {
 
             {/* Action icons */}
             <div className="flex items-center gap-2 md:gap-4">
-              <a
-                href="https://www.messenger.com/t/101541682775777"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2.5 hover:bg-[#F5F5F5] rounded-full transition-colors hidden md:flex items-center justify-center text-[#0084FF]"
-                title="Facebook Messenger"
-              >
-                <MessageCircle className="size-5" />
-              </a>
               <button
                 className="p-2.5 hover:bg-[#F5F5F5] rounded-full transition-colors hidden md:block"
                 title="Phone"
