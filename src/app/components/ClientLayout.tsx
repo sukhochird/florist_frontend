@@ -28,7 +28,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           <CartDrawer />
           {/* Messenger FAB - bottom right, desktop & mobile */}
           <a
-            href="https://www.messenger.com/t/101541682775777"
+            href="https://www.messenger.com/t/103715851508871/"
             target="_blank"
             rel="noopener noreferrer"
             className="fixed bottom-6 right-6 z-40 flex flex-col items-center gap-1.5 group"
