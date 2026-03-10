@@ -18,7 +18,7 @@ interface Product {
   image: string;
 }
 
-const ACCENT = '#8B5CF6'; // МАРТ 8 өнгө
+const ACCENT = '#8B5CF6'; // Төрсөн өдрийн pre-order өнгө
 
 export function March8PreOrder() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -82,7 +82,7 @@ export function March8PreOrder() {
   }
 
   return (
-    <section id="mart8-preorder" className="relative py-16 md:py-20 overflow-hidden bg-gradient-to-b from-[#F5F0FF] to-white">
+    <section id="birthday-preorder" className="relative py-16 md:py-20 overflow-hidden bg-gradient-to-b from-[#F5F0FF] to-white">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-20 -right-20 text-violet-100 opacity-50 rotate-12">
@@ -109,19 +109,20 @@ export function March8PreOrder() {
             </motion.div>
             
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-gray-900 leading-[1.1] mb-6">
-              МАРТ 8 <span className="italic" style={{ color: ACCENT }}>Collection</span>
+              Birthday <span className="italic" style={{ color: ACCENT }}>Collection</span>
             </h2>
             
             <p className="text-gray-600 text-lg leading-relaxed max-w-lg">
-              Ээждээ, эхнэртээ, охиндоо бэлэглэх хамгийн сайхан бэлэг. Эрт захиалж хөнгөлөлтөөр аваарай.
+              Төрсөн өдрийн бэлэглэх цэцэг. Эрт захиалж хөнгөлөлтөөр аваарай.
             </p>
           </div>
 
-          {/* Countdown Card */}
+          {/* Countdown Card - temporarily hidden */}
+          {false && (
           <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl border min-w-[300px] md:min-w-[380px] border-violet-100 shadow-violet-100/50">
             <div className="flex items-center gap-2 mb-6 justify-center" style={{ color: ACCENT }}>
               <Timer className="size-5" />
-              <span className="font-bold uppercase tracking-wider text-sm">Урьдчилсан захиалга дуусахад</span>
+              <span className="font-bold uppercase tracking-wider text-sm">Төрсөн өдрийн урьдчилсан захиалга дуусахад</span>
             </div>
             
             <div className="grid grid-cols-4 gap-4 text-center">
@@ -142,6 +143,7 @@ export function March8PreOrder() {
               ))}
             </div>
           </div>
+          )}
         </div>
 
         {/* Product Grid */}
@@ -171,7 +173,7 @@ export function March8PreOrder() {
                   <div className="flex flex-col gap-2">
                     <span className="bg-white/95 backdrop-blur px-3 py-1 rounded-md text-xs font-bold shadow-sm flex items-center gap-1.5" style={{ color: ACCENT }}>
                       <Calendar className="size-3" />
-                      Mar 8
+                      Төрсөн өдөр
                     </span>
                   </div>
                   <div className="p-2 rounded-full shadow-lg text-white" style={{ backgroundColor: ACCENT }}>

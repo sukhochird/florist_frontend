@@ -19,7 +19,7 @@ export default function HomePage() {
       <OccasionsGrid />
       <IntroSection />
 
-      {/* МАРТ 8 Pre-Order Section */}
+      {/* Төрсөн өдрийн Pre-Order Section */}
       <March8PreOrder />
 
       {/* Filter / Flower Types Nav — онцлох бүтээгдэхүүнийг ангилалаар шүүнэ */}
