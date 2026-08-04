@@ -289,11 +289,11 @@ export default function ProductDetailPage() {
                   <h4 className="font-semibold text-gray-900 mb-2">Хүргэлтийн нөхцөл</h4>
                   <p className="mb-3">Хүргэлтийн үнэ тариф:</p>
                   <ul className="list-disc pl-5 space-y-1 mb-3">
-                    <li><span className="font-medium text-gray-800">Хүргүүлж авах:</span> 10,000₮ (Улаанбаатар хот дотор)</li>
+                    <li><span className="font-medium text-gray-800">Хүргүүлж авах:</span> 15,000₮ (Улаанбаатар хот дотор)</li>
                     <li><span className="font-medium text-gray-800">Хөдөө орон нутгийн унаанд тавиулах:</span> 15,000₮</li>
                   </ul>
                   <div className="p-3 bg-amber-50 text-amber-800 rounded-lg border border-amber-100">
-                    Санамж: Хотын A бүсэд хүргэлт 10,000₮ бөгөөд энэ бүсээс гадуурх хүргэлтэнд нэмэлт төлбөр бодогдоно.
+                    Санамж: Хотын A бүсэд хүргэлт 15,000₮ бөгөөд энэ бүсээс гадуурх хүргэлтэнд нэмэлт төлбөр бодогдоно.
                   </div>
                 </section>
                 <section>
@@ -557,7 +557,7 @@ export default function ProductDetailPage() {
                 <div className="space-y-3 text-sm text-gray-600">
                   <div className="flex items-start gap-3">
                     <Clock className="size-4 mt-0.5" />
-                    <span><span className="font-medium text-gray-900">Хүргэлт:</span> 10,000₮ (Хот дотор) / 15,000₮ (Орон нутаг)</span>
+                    <span><span className="font-medium text-gray-900">Хүргэлт:</span> 15,000₮ (Хот дотор) / 15,000₮ (Орон нутаг)</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <RefreshCw className="size-4 mt-0.5" />
@@ -654,12 +654,12 @@ export default function ProductDetailPage() {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                 <p className="mb-4 font-medium">Хүргэлтийн үнэ тариф:</p>
                 <ul className="list-disc pl-5 space-y-2 mb-4">
-                  <li><span className="font-semibold">Хүргүүлж авах:</span> 10,000₮ (Улаанбаатар хот дотор)</li>
+                  <li><span className="font-semibold">Хүргүүлж авах:</span> 15,000₮ (Улаанбаатар хот дотор)</li>
                   <li><span className="font-semibold">Хөдөө орон нутгийн унаанд тавиулах:</span> 15,000₮</li>
                 </ul>
                 <div className="p-4 bg-yellow-50 text-yellow-800 text-sm rounded border border-yellow-100 flex gap-3">
                     <div className="shrink-0 mt-0.5">ℹ️</div>
-                    <p>Санамж: Хотын A бүсэд хүргэлт 10,000₮ бөгөөд энэ бүсээс гадуурх хүргэлтэнд нэмэлт төлбөр бодогдоно.</p>
+                    <p>Санамж: Хотын A бүсэд хүргэлт 15,000₮ бөгөөд энэ бүсээс гадуурх хүргэлтэнд нэмэлт төлбөр бодогдоно.</p>
                 </div>
               </motion.div>
             )}

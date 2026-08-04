@@ -27,7 +27,7 @@ export default function CheckoutPage() {
   const [promoLoading, setPromoLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const deliveryFee = deliveryMethod === 'city' ? 10000 : 15000;
+  const deliveryFee = 15000;
   const discountAmount = appliedPromo?.valid && appliedPromo.discount_amount ? appliedPromo.discount_amount : 0;
   const grandTotal = Math.max(0, totalPrice + deliveryFee - discountAmount);
 
@@ -250,7 +250,7 @@ export default function CheckoutPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-medium">Хүргүүлж авах (УБ хот дотор)</span>
-                        <span className="font-bold text-accent">10,000₮</span>
+                        <span className="font-bold text-accent">15,000₮</span>
                       </div>
                       <p className="text-sm text-gray-500">Хотын A бүсэд хүргэлт хийгдэнэ.</p>
                     </div>

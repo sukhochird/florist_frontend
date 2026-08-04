@@ -36,7 +36,7 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const productTotal = product.price * product.quantity;
-  const deliveryFee = deliveryMethod === 'city' ? 10000 : 15000;
+  const deliveryFee = 15000;
   const discountAmount = appliedPromo?.valid && appliedPromo.discount_amount ? appliedPromo.discount_amount : 0;
   const grandTotal = Math.max(0, productTotal + deliveryFee - discountAmount);
 
@@ -198,7 +198,7 @@ export function DirectCheckoutModal({ isOpen, onClose, product }: DirectCheckout
                           <div className="flex-1 text-sm">
                             <div className="flex items-center justify-between">
                               <span className="font-medium">Хүргүүлж авах</span>
-                              <span className="font-bold text-accent">10,000₮</span>
+                              <span className="font-bold text-accent">15,000₮</span>
                             </div>
                             <p className="text-xs text-gray-500">УБ хот дотор (A бүс)</p>
                           </div>
