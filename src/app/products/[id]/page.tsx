@@ -222,6 +222,10 @@ export default function ProductDetailPage() {
                                     <span className="text-sm font-semibold text-gray-900 block mb-1">Салбар 2:</span>
                                     <p className="text-gray-600 text-sm">🏢Grand Plaza Office, 1-р давхар Elite Premium Flower Shop</p>
                                 </div>
+                                <div>
+                                    <span className="text-sm font-semibold text-gray-900 block mb-1">Салбар 3:</span>
+                                    <p className="text-gray-600 text-sm">Century Shopping Center, Elite Flower</p>
+                                </div>
                             </div>
                         </div>
                     </div>

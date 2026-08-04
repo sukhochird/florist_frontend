@@ -67,6 +67,11 @@ export function Footer() {
                     <br />
                     <span className="text-white/80">Grand Plaza Office, 1-р давхар Elite Premium Flower Shop</span>
                   </p>
+                  <p>
+                    <span className="font-medium text-white">Салбар 3:</span>
+                    <br />
+                    <span className="text-white/80">Century Shopping Center, Elite Flower</span>
+                  </p>
                 </div>
               </li>
               <li className="flex gap-3">

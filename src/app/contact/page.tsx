@@ -33,7 +33,7 @@ export default function ContactPage() {
       <div className="max-w-[1440px] mx-auto px-4 md:px-8 mt-12 md:mt-20">
         
         {/* Branches Split Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12 mb-20">
             {/* Branch 1 */}
             <motion.div 
                 initial={{ opacity: 0, x: -20 }}
@@ -121,6 +121,50 @@ export default function ContactPage() {
                     </div>
                 </div>
             </motion.div>
+
+            {/* Branch 3 */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300 md:col-span-2 xl:col-span-1"
+            >
+                <div className="h-64 overflow-hidden relative">
+                    <img 
+                        src="https://shopo.sgp1.cdn.digitaloceanspaces.com/eliteflower/hero_slides/58e0a162-3cb5-4f7c-a968-bb6836b2fda8_6.jpeg" 
+                        alt="Branch 3 Exterior" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
+                        Салбар 3
+                    </div>
+                </div>
+                <div className="p-8 space-y-6">
+                    <h3 className="text-2xl font-serif font-bold">Century Shopping Center</h3>
+                    
+                    <div className="space-y-4 text-gray-600">
+                        <div className="flex items-start gap-3">
+                            <MapPin className="size-5 text-accent shrink-0 mt-1" />
+                            <p className="leading-relaxed">
+                                Century Shopping Center, Elite Flower
+                            </p>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                            <Phone className="size-5 text-accent shrink-0 mt-1" />
+                            <div className="flex flex-col">
+                                <a href="tel:90915955" className="hover:text-accent transition-colors">9091-5955</a>
+                                <a href="tel:90915595" className="hover:text-accent transition-colors">9091-5595</a>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                            <Clock className="size-5 text-accent shrink-0 mt-1" />
+                            <p>09:00 - 21:00 (Өдөр бүр)</p>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
         </div>
 
         {/* General Info */}
@@ -187,7 +231,7 @@ export default function ContactPage() {
                 <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2">
                     <div className="bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg max-w-xs">
                         <p className="font-bold text-sm text-gray-900">Elite Flower</p>
-                        <p className="text-xs text-gray-600">Салбар 1: 10-р хороолол · Салбар 2: Grand Plaza</p>
+                        <p className="text-xs text-gray-600">Салбар 1: 10-р хороолол · Салбар 2: Grand Plaza · Салбар 3: Century</p>
                     </div>
                     <a
                         href="https://www.google.com/maps/search/Elite+Flower+Ulaanbaatar"
